@@ -17,7 +17,6 @@ public class RegHandler
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event)
     {
-        SItems.initLists();
         event.getRegistry().registerAll(SItems.getItems());
         event.getRegistry().registerAll(SBlocks.getItemBlocks());
     }
@@ -25,7 +24,6 @@ public class RegHandler
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event)
     {
-        SBlocks.initLists();
         event.getRegistry().registerAll(SBlocks.getBlocks());
     }
 

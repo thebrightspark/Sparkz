@@ -38,11 +38,6 @@ public class SBlocks
         return BLOCKS.toArray(new Block[BLOCKS.size()]);
     }
 
-    public static void initLists(){
-        BLOCKS = new ArrayList<>();
-        ITEM_BLOCKS = new ArrayList<>();
-    }
-
     public static void uninitLists(){
         BLOCKS = null;
         ITEM_BLOCKS = null;
