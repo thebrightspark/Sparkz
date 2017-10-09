@@ -6,7 +6,7 @@ import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import org.apache.logging.log4j.Logger;
 
@@ -38,13 +38,8 @@ public class Sparkz
     }
 
     @Mod.EventHandler
-    public void init(FMLInitializationEvent event)
+    public void postInit(FMLPostInitializationEvent event)
     {
-
-    }
-
-    @Mod.EventHandler
-    public void postInit(FMLPreInitializationEvent event){
         SItems.uninitLists();
         SBlocks.uninitLists();
     }
