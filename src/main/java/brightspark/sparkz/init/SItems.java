@@ -23,4 +23,8 @@ public class SItems
     {
         return ITEMS.toArray(new Item[ITEMS.size()]);
     }
+
+    public static void uninitLists(){
+        ITEMS = null;
+    }
 }

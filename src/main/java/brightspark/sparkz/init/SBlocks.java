@@ -37,4 +37,9 @@ public class SBlocks
     {
         return BLOCKS.toArray(new Block[BLOCKS.size()]);
     }
+
+    public static void uninitLists(){
+        BLOCKS = null;
+        ITEM_BLOCKS = null;
+    }
 }
