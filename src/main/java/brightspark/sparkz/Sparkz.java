@@ -1,5 +1,7 @@
 package brightspark.sparkz;
 
+import brightspark.sparkz.init.SBlocks;
+import brightspark.sparkz.init.SItems;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
@@ -39,5 +41,11 @@ public class Sparkz
     public void init(FMLInitializationEvent event)
     {
 
+    }
+
+    @Mod.EventHandler
+    public void postInit(FMLPreInitializationEvent event){
+        SItems.uninitLists();
+        SBlocks.uninitLists();
     }
 }
