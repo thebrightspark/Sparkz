@@ -1,6 +1,7 @@
 package brightspark.sparkz.energy;
 
 import brightspark.sparkz.blocks.BlockCable;
+import brightspark.sparkz.util.CommonUtils;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
@@ -19,6 +20,17 @@ public class EnergyNetwork
     public EnergyNetwork(World world, BlockPos cable)
     {
         cables.add(cable);
+    }
+
+    /**
+     * Merges the network into this one and then removes the other network
+     */
+    public void mergeWith(EnergyNetwork network)
+    {
+        cables.addAll(network.cables);
+        inputs.addAll(network.inputs);
+        outputs.addAll(network.outputs);
+        EnergyHandler.removeNetwork(network);
     }
 
     public void update(World world)
@@ -111,9 +123,25 @@ public class EnergyNetwork
         return false;
     }
 
-    public void addCable(BlockPos pos)
+    /**
+     * Checks if the given position is adjacent to a cable in this network
+     */
+    public boolean canAddComponent(BlockPos componentPos)
+    {
+        for(BlockPos pos : cables)
+            if(CommonUtils.areBlocksAdjacent(pos, componentPos))
+                return true;
+        return false;
+    }
+
+    public void addCable(IBlockAccess world, BlockPos pos)
     {
         cables.add(pos);
+
+        //Merge two newly joined networks
+        EnergyNetwork otherNetwork = CommonUtils.findAdjacentNetwork(world, pos, this);
+        if(otherNetwork != null)
+            mergeWith(otherNetwork);
     }
 
     public void removeCable(BlockPos pos)

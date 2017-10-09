@@ -1,0 +1,14 @@
+{
+    "forge_marker": 1,
+    "defaults": {
+        "model": "cable_center"
+    },
+    "variants": {
+        "north":    { "true": { "submodel": "cable_side" }, "false": {}},
+        "south":    { "true": { "submodel": "cable_side", "y": 180 }, "false": {}},
+        "east":     { "true": { "submodel": "cable_side", "y": 90 }, "false": {}},
+        "west":     { "true": { "submodel": "cable_side", "y": 270 }, "false": {}},
+        "up":       { "true": { "submodel": "cable_side", "x": 90 }, "false": {}},
+        "down":     { "true": { "submodel": "cable_side", "x": 270 }, "false": {}}
+    }
+}

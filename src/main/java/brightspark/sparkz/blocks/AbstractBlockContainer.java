@@ -21,18 +21,6 @@ public abstract class AbstractBlockContainer<T extends TileEntity> extends Block
         hasTileEntity = true;
     }
 
-    @Override
-    public boolean isOpaqueCube(IBlockState state)
-    {
-        return false;
-    }
-
-    @Override
-    public boolean isFullCube(IBlockState state)
-    {
-        return false;
-    }
-
     @SuppressWarnings("unchecked")
     public T getTileEntity(IBlockAccess world, BlockPos pos)
     {

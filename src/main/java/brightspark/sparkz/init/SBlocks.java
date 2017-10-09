@@ -1,8 +1,10 @@
 package brightspark.sparkz.init;
 
+import brightspark.sparkz.blocks.BlockCable;
+import brightspark.sparkz.blocks.TileCable;
 import net.minecraft.block.Block;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
+import net.minecraftforge.fml.common.registry.GameRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +14,11 @@ public class SBlocks
     public static List<Block> BLOCKS = new ArrayList<>();
     public static List<ItemBlock> ITEM_BLOCKS = new ArrayList<>();
 
+    public static BlockCable cable;
+
     static
     {
-
+        addBlock(cable = new BlockCable());
     }
 
     private static void addBlock(Block block)
@@ -42,5 +46,10 @@ public class SBlocks
     {
         BLOCKS = null;
         ITEM_BLOCKS = null;
+    }
+
+    public static void regTileEntities()
+    {
+        GameRegistry.registerTileEntity(TileCable.class, cable.getRegistryName().getResourcePath());
     }
 }
