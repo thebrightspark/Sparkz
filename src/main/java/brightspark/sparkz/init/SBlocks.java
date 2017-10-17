@@ -11,13 +11,16 @@ import java.util.List;
 
 public class SBlocks
 {
-    public static List<Block> BLOCKS = new ArrayList<>();
-    public static List<ItemBlock> ITEM_BLOCKS = new ArrayList<>();
+    public static List<Block> BLOCKS;
+    public static List<ItemBlock> ITEM_BLOCKS;
 
     public static BlockCable cable;
 
-    static
+    private static void init()
     {
+        BLOCKS = new ArrayList<>();
+        ITEM_BLOCKS = new ArrayList<>();
+
         addBlock(cable = new BlockCable());
     }
 
@@ -34,11 +37,13 @@ public class SBlocks
 
     public static ItemBlock[] getItemBlocks()
     {
+        if(ITEM_BLOCKS == null) init();
         return ITEM_BLOCKS.toArray(new ItemBlock[ITEM_BLOCKS.size()]);
     }
 
     public static Block[] getBlocks()
     {
+        if(BLOCKS == null) init();
         return BLOCKS.toArray(new Block[BLOCKS.size()]);
     }
 

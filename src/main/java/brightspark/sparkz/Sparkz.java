@@ -35,7 +35,6 @@ public class Sparkz
     public void preInit(FMLPreInitializationEvent event)
     {
         logger = event.getModLog();
-        SBlocks.regTileEntities();
     }
 
     @Mod.EventHandler

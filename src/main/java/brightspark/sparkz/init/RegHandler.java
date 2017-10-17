@@ -19,6 +19,7 @@ public class RegHandler
     {
         event.getRegistry().registerAll(SItems.getItems());
         event.getRegistry().registerAll(SBlocks.getItemBlocks());
+        SBlocks.regTileEntities();
     }
 
     @SubscribeEvent
