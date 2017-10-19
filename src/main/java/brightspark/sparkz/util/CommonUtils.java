@@ -1,5 +1,6 @@
 package brightspark.sparkz.util;
 
+import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.blocks.BlockCable;
 import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.energy.EnergyNetwork;
@@ -20,7 +21,9 @@ public class CommonUtils
         int xDif = Math.abs(pos1.getX() - pos2.getX());
         int yDif = Math.abs(pos1.getY() - pos2.getY());
         int zDif = Math.abs(pos1.getZ() - pos2.getZ());
-        return xDif == 1 || yDif == 1 || zDif == 1;
+        boolean result = xDif + yDif + zDif == 1;
+        Sparkz.logger.info("Are adjacent? {} -> Pos1: {}, Pos2: {}", result, pos1, pos2);
+        return result;
     }
 
     /**
