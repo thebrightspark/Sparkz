@@ -1,5 +1,6 @@
 package brightspark.sparkz.energy;
 
+import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.blocks.TileCable;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
@@ -42,6 +43,7 @@ public class EnergyHandler
         if(world.isRemote) return;
         runInThread(() ->
         {
+            //Add to existing adjacent network if there is one
             for(EnergyNetwork network : networks)
                 if(network.canAddComponent(componentPos))
                 {
@@ -60,28 +62,57 @@ public class EnergyHandler
                             network.addOutput(componentPos);
 
                     }
+                    Sparkz.logger.info("Added block %s at %s to energy network %s",
+                            world.getBlockState(componentPos).getBlock().getRegistryName(), componentPos, network);
                     break;
                 }
+            //No network found adjacent to block placed - Create new network
+            EnergyNetwork network = newEnergyNetwork(world, componentPos);
+            Sparkz.logger.info("Added block %s at %s to NEW energy network %s",
+                    world.getBlockState(componentPos).getBlock().getRegistryName(), componentPos, network);
         });
     }
 
     public static void removeNetwork(EnergyNetwork network)
     {
+        Sparkz.logger.info("Removing network %s", network);
         networks.remove(network);
     }
 
-    public static void newEnergyNetwork(World world, BlockPos cable)
+    public static EnergyNetwork newEnergyNetwork(World world, BlockPos cable)
     {
-        if(world.isRemote) return;
-        networks.add(new EnergyNetwork(world, cable));
+        if(world.isRemote) return null;
+        EnergyNetwork network = new EnergyNetwork(cable);
+        networks.add(network);
+        Sparkz.logger.info("Created new network %s", network);
+        return network;
     }
 
     public static void onCableRemoved(World world, BlockPos cablePos)
     {
-        //TODO: Check networks at cable position
         if(world.isRemote) return;
-        //Gets the network affected
-        EnergyNetwork affectedNetwork = getNetworkWithCable(cablePos);
+        onCableRemoved(world, cablePos, getNetworkWithCable(cablePos));
+    }
+
+    public static void onCableRemoved(World world, BlockPos cablePos, EnergyNetwork network)
+    {
+        if(world.isRemote || network == null) return;
+        Sparkz.logger.info("Cable at %s removed from network %s", cablePos, network);
+        network.removeCable(cablePos);
+        if(network.hasCables())
+        {
+            Sparkz.logger.info("Splitting network %s at position %s", network, cablePos);
+            runInThread(() ->
+            {
+                List<EnergyNetwork> newNetworks = network.splitAt(cablePos);
+                if(newNetworks.size() > 0)
+                {
+                    Sparkz.logger.info("Adding %s new networks due to split of network %s",
+                            newNetworks.size(), network);
+                    networks.addAll(newNetworks);
+                }
+            });
+        }
     }
 
     @SubscribeEvent

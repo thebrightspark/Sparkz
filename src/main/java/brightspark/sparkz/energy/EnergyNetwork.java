@@ -3,6 +3,7 @@ package brightspark.sparkz.energy;
 import brightspark.sparkz.blocks.BlockCable;
 import brightspark.sparkz.util.CommonUtils;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -17,9 +18,29 @@ public class EnergyNetwork
     private List<BlockPos> inputs = new ArrayList<>();
     private List<BlockPos> outputs = new ArrayList<>();
 
-    public EnergyNetwork(World world, BlockPos cable)
+    public EnergyNetwork(BlockPos cable)
     {
         cables.add(cable);
+    }
+
+    /**
+     * Get a list of positions of cables in this network that are adjacent to the given position
+     */
+    private List<BlockPos> findAdjacentCablePositions(BlockPos pos)
+    {
+        return findAdjacentCablePositions(pos, null);
+    }
+
+    private List<BlockPos> findAdjacentCablePositions(BlockPos pos, BlockPos ignorePos)
+    {
+        List<BlockPos> positions = new ArrayList<>();
+        for(EnumFacing facing : EnumFacing.VALUES)
+        {
+            BlockPos sidePos = pos.offset(facing);
+            if(cables.contains(sidePos) && (ignorePos == null || !sidePos.equals(ignorePos)))
+                positions.add(sidePos);
+        }
+        return positions;
     }
 
     /**
@@ -31,6 +52,19 @@ public class EnergyNetwork
         inputs.addAll(network.inputs);
         outputs.addAll(network.outputs);
         EnergyHandler.removeNetwork(network);
+    }
+
+    /**
+     * Splits this network if the removed position causes a gap in this network
+     * Returns the new networks as a result of the split
+     */
+    public List<EnergyNetwork> splitAt(BlockPos pos)
+    {
+        List<EnergyNetwork> newNetworks = new ArrayList<>(1);
+
+        //TODO: Split network
+
+        return newNetworks;
     }
 
     public void update(World world)
@@ -62,18 +96,20 @@ public class EnergyNetwork
     /**
      * Checks every block in the network and returns whether it has changed
      */
-    public boolean checkNetwork(IBlockAccess world)
+    public boolean checkNetwork(World world)
     {
         boolean changed = false;
 
         Iterator<BlockPos> iterator = cables.iterator();
         while(iterator.hasNext())
         {
-            if(!isCableBlock(world, iterator.next()))
+            BlockPos pos = iterator.next();
+            if(!isCableBlock(world, pos))
             {
+                //Split up networks if break in this network
+                EnergyHandler.onCableRemoved(world, pos);
                 changed = true;
                 iterator.remove();
-                //TODO: Need to split up networks if break in this network
             }
         }
 
