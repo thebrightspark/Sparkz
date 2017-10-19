@@ -1,7 +1,11 @@
 {
     "forge_marker": 1,
     "defaults": {
-        "model": "sparkz:cable_center"
+        "model": "sparkz:cable_center",
+        "textures": {
+            "0": "sparkz:blocks/cable",
+            "particle": "blocks/stone"
+        }
     },
     "variants": {
         "inventory":{ "model": "sparkz:cable_center" },
