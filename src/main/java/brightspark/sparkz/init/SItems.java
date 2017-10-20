@@ -1,5 +1,6 @@
 package brightspark.sparkz.init;
 
+import brightspark.sparkz.items.ItemDebug;
 import net.minecraft.item.Item;
 
 import java.util.ArrayList;
@@ -7,11 +8,15 @@ import java.util.List;
 
 public class SItems
 {
-    public static List<Item> ITEMS = new ArrayList<>();
+    public static List<Item> ITEMS;
 
-    static
+    public static ItemDebug debug;
+
+    private static void init()
     {
+        ITEMS = new ArrayList<>();
 
+        addItem(debug = new ItemDebug());
     }
 
     private static void addItem(Item item)
@@ -21,6 +26,7 @@ public class SItems
 
     public static Item[] getItems()
     {
+        if(ITEMS == null) init();
         return ITEMS.toArray(new Item[ITEMS.size()]);
     }
 

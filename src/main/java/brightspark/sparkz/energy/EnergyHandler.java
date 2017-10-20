@@ -2,6 +2,7 @@ package brightspark.sparkz.energy;
 
 import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.blocks.TileCable;
+import brightspark.sparkz.util.CommonUtils;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
@@ -57,12 +58,12 @@ public class EnergyHandler
      * Adds the component to the network
      * Returns is successful
      */
-    private static boolean addToNetwork(EnergyNetwork network, World world, BlockPos componentPos)
+    private static boolean addToEnergyNetwork(EnergyNetwork network, World world, BlockPos componentPos)
     {
         TileEntity te = world.getTileEntity(componentPos);
         if(te == null) return false;
         if(trySetNetworkToCable(world, componentPos, network))
-            network.addCable(world, componentPos);
+            network.addCable(componentPos);
         else
         {
             IEnergy energy = IEnergy.create(te, null);
@@ -76,22 +77,30 @@ public class EnergyHandler
         return true;
     }
 
-    public static void addToEnergyNetwork(World world, BlockPos componentPos)
+    /**
+     * Tries to add the component to an adjacent network
+     * If none found, will create a new network for it
+     */
+    public static void addNewComponent(World world, BlockPos componentPos)
     {
         if(world.isRemote) return;
         runInThread(() ->
         {
             //Add to existing adjacent network if there is one
-            for(EnergyNetwork network : networks)
-                if(network.canAddComponent(componentPos))
+            List<EnergyNetwork> adjacentNetworks = CommonUtils.findAdjacentNetworks(world, componentPos);
+            if(adjacentNetworks.size() > 0)
+            {
+                EnergyNetwork network1 = adjacentNetworks.remove(0);
+                if(addToEnergyNetwork(network1, world, componentPos))
                 {
-                    if(addToNetwork(network, world, componentPos))
-                    {
-                        Sparkz.logger.info("Added block {} at {} to energy network {}",
-                                world.getBlockState(componentPos).getBlock().getRegistryName(), componentPos, network);
-                        break;
-                    }
+                    Sparkz.logger.info("Added block {} at {} to energy network {}",
+                            world.getBlockState(componentPos).getBlock().getRegistryName(), componentPos, network1);
+                    if(adjacentNetworks.size() > 0)
+                        //Merge other network to this one
+                        network1.mergeWith(world, adjacentNetworks);
+                    return;
                 }
+            }
             //No network found adjacent to block placed - Create new network
             EnergyNetwork network = newEnergyNetwork(world, componentPos);
             Sparkz.logger.info("Added block {} at {} to NEW energy network {}",
@@ -132,17 +141,19 @@ public class EnergyHandler
         network.removeCable(cablePos);
         if(network.hasCables())
         {
-            Sparkz.logger.info("Splitting network {} at position {}", network, cablePos);
-            runInThread(() ->
+            if(CommonUtils.countAdjacentCables(world, cablePos) > 1)
             {
-                List<EnergyNetwork> newNetworks = network.splitAt(cablePos);
-                if(newNetworks.size() > 0)
-                {
-                    Sparkz.logger.info("Adding {} new networks due to split of network {}",
-                            newNetworks.size(), network);
-                    networks.addAll(newNetworks);
-                }
-            });
+                Sparkz.logger.info("Splitting network {} at position {}", network, cablePos);
+                runInThread(() -> {
+                    List<EnergyNetwork> newNetworks = network.splitAt(cablePos);
+                    if(newNetworks.size() > 0)
+                    {
+                        Sparkz.logger.info("Adding {} new networks due to split of network {}",
+                                newNetworks.size(), network);
+                        networks.addAll(newNetworks);
+                    }
+                });
+            }
         }
         else
             removeNetwork(network);

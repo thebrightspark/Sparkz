@@ -1,6 +1,8 @@
 package brightspark.sparkz.energy;
 
+import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.blocks.BlockCable;
+import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.util.CommonUtils;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
@@ -44,14 +46,28 @@ public class EnergyNetwork
     }
 
     /**
-     * Merges the network into this one and then removes the other network
+     * Merges the networks into this one and then removes the other networks
      */
-    public void mergeWith(EnergyNetwork network)
+    public void mergeWith(IBlockAccess world, List<EnergyNetwork> networks)
     {
-        cables.addAll(network.cables);
-        inputs.addAll(network.inputs);
-        outputs.addAll(network.outputs);
-        EnergyHandler.removeNetwork(network);
+        mergeWith(world, networks.toArray(new EnergyNetwork[networks.size()]));
+    }
+
+    /**
+     * Merges the networks into this one and then removes the other networks
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void mergeWith(IBlockAccess world, EnergyNetwork... networks)
+    {
+        Sparkz.logger.info("Merging {} with {} other networks", this, networks.length);
+        for(EnergyNetwork otherNetwork : networks)
+        {
+            otherNetwork.cables.forEach((pos) -> ((TileCable) world.getTileEntity(pos)).setNetwork(this));
+            cables.addAll(otherNetwork.cables);
+            inputs.addAll(otherNetwork.inputs);
+            outputs.addAll(otherNetwork.outputs);
+            EnergyHandler.removeNetwork(otherNetwork);
+        }
     }
 
     /**
@@ -170,19 +186,24 @@ public class EnergyNetwork
         return false;
     }
 
-    public void addCable(IBlockAccess world, BlockPos pos)
+    public int getNumCables()
+    {
+        return cables.size();
+    }
+
+    public void addCable(BlockPos pos)
     {
         cables.add(pos);
-
-        //Merge two newly joined networks
-        EnergyNetwork otherNetwork = CommonUtils.findAdjacentNetwork(world, pos, this);
-        if(otherNetwork != null)
-            mergeWith(otherNetwork);
     }
 
     public void removeCable(BlockPos pos)
     {
         cables.remove(pos);
+    }
+
+    public int getNumInputs()
+    {
+        return inputs.size();
     }
 
     public void addInput(BlockPos pos)
@@ -193,6 +214,11 @@ public class EnergyNetwork
     public void removeInput(BlockPos pos)
     {
         inputs.remove(pos);
+    }
+
+    public int getNumOutputs()
+    {
+        return outputs.size();
     }
 
     public void addOutput(BlockPos pos)

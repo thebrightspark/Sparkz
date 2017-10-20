@@ -69,7 +69,7 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     public void onBlockAdded(World world, BlockPos pos, IBlockState state)
     {
         super.onBlockAdded(world, pos, state);
-        EnergyHandler.addToEnergyNetwork(world, pos);
+        EnergyHandler.addNewComponent(world, pos);
     }
 
     @Override

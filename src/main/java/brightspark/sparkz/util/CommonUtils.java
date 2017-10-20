@@ -4,12 +4,14 @@ import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.blocks.BlockCable;
 import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.energy.EnergyNetwork;
-import com.sun.istack.internal.NotNull;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class CommonUtils
 {
@@ -43,35 +45,43 @@ public class CommonUtils
     }
 
     /**
-     * Finds an adjacent cable block
+     * Returns the amount of adjacent cables to this position
      */
-    public static EnumFacing findAdjacentCable(IBlockAccess world, BlockPos pos)
+    public static int countAdjacentCables(IBlockAccess world, BlockPos pos)
     {
+        int num = 0;
         for(EnumFacing side : EnumFacing.values())
         {
             IBlockState state = world.getBlockState(pos.offset(side));
             if(state.getBlock() instanceof BlockCable)
-                return side;
+                num++;
         }
-        return null;
+        return num;
     }
 
     /**
      * Finds an adjacent network that's not one of the given energy networks
      */
-    public static EnergyNetwork findAdjacentNetwork(IBlockAccess world, BlockPos pos, @NotNull EnergyNetwork... networks)
+    public static List<EnergyNetwork> findAdjacentNetworks(IBlockAccess world, BlockPos pos, EnergyNetwork... networks)
     {
+        List<EnergyNetwork> adjacentNetworks = new ArrayList<>();
         for(EnumFacing side : EnumFacing.values())
         {
             TileEntity te = world.getTileEntity(pos.offset(side));
             if(te != null && te instanceof TileCable)
+            {
+                EnergyNetwork otherNetwork = ((TileCable) te).getNetwork();
+                boolean isBlacklistedNetwork = false;
                 for(EnergyNetwork network : networks)
-                {
-                    EnergyNetwork otherNetwork = ((TileCable) te).getNetwork();
-                    if(!otherNetwork.equals(network))
-                        return otherNetwork;
-                }
+                    if(otherNetwork.equals(network))
+                    {
+                        isBlacklistedNetwork = true;
+                        break;
+                    }
+                if(!isBlacklistedNetwork && !adjacentNetworks.contains(otherNetwork))
+                    adjacentNetworks.add(otherNetwork);
+            }
         }
-        return null;
+        return adjacentNetworks;
     }
 }
