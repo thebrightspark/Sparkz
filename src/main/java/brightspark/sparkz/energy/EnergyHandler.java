@@ -145,11 +145,23 @@ public class EnergyHandler
             {
                 Sparkz.logger.info("Splitting network {} at position {}", network, cablePos);
                 runInThread(() -> {
-                    List<EnergyNetwork> newNetworks = network.splitAt(cablePos);
+                    List<EnergyNetwork> newNetworks = network.splitAt(world, cablePos);
                     if(newNetworks.size() > 0)
                     {
                         Sparkz.logger.info("Adding {} new networks due to split of network {}",
                                 newNetworks.size(), network);
+                        //Set new networks to cables
+                        for(EnergyNetwork newNetwork : newNetworks)
+                        {
+                            for(BlockPos pos : newNetwork.getCables())
+                            {
+                                TileEntity te = world.getTileEntity(pos);
+                                if(te instanceof TileCable)
+                                    ((TileCable) te).setNetwork(newNetwork);
+                                else
+                                    newNetwork.removeCable(pos);
+                            }
+                        }
                         networks.addAll(newNetworks);
                     }
                 });

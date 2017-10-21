@@ -24,7 +24,7 @@ public class CommonUtils
         int yDif = Math.abs(pos1.getY() - pos2.getY());
         int zDif = Math.abs(pos1.getZ() - pos2.getZ());
         boolean result = xDif + yDif + zDif == 1;
-        Sparkz.logger.info("Are adjacent? {} -> Pos1: {}, Pos2: {}", result, pos1, pos2);
+        //Sparkz.logger.info("Are adjacent? {} -> Pos1: {}, Pos2: {}", result, pos1, pos2);
         return result;
     }
 
@@ -96,6 +96,8 @@ public class CommonUtils
         for(EnumFacing facing : EnumFacing.VALUES)
         {
             BlockPos nextPos = pos.offset(facing);
+            if(!CommonUtils.isCable(world, nextPos))
+                continue;
             boolean alreadyInNetwork = false;
             for(List<BlockPos> network : networks)
             {
@@ -108,6 +110,7 @@ public class CommonUtils
             if(alreadyInNetwork)
                 continue;
             List<BlockPos> connectedCables = getAllAdjacentConnectedCables(world, new ArrayList<>(), nextPos);
+            connectedCables.add(nextPos);
             if(!connectedCables.isEmpty())
                 networks.add(connectedCables);
         }

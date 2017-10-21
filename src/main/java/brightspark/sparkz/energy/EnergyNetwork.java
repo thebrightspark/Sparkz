@@ -11,6 +11,7 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -20,9 +21,14 @@ public class EnergyNetwork
     private List<BlockPos> inputs = new ArrayList<>();
     private List<BlockPos> outputs = new ArrayList<>();
 
-    public EnergyNetwork(BlockPos cable)
+    public EnergyNetwork(BlockPos... cables)
     {
-        cables.add(cable);
+        Collections.addAll(this.cables, cables);
+    }
+
+    public EnergyNetwork(List<BlockPos> cables)
+    {
+        this.cables.addAll(cables);
     }
 
     /**
@@ -74,11 +80,19 @@ public class EnergyNetwork
      * Splits this network if the removed position causes a gap in this network
      * Returns the new networks as a result of the split
      */
-    public List<EnergyNetwork> splitAt(BlockPos pos)
+    public List<EnergyNetwork> splitAt(World world, BlockPos pos)
     {
         List<EnergyNetwork> newNetworks = new ArrayList<>(1);
 
-        //TODO: Split network
+        List<List<BlockPos>> cableNetworks = CommonUtils.getAllAdjacentConnectedCables(world, pos);
+        if(cableNetworks.size() > 0)
+            cables = cableNetworks.get(0);
+        if(cableNetworks.size() > 1)
+            for(int i = 1; i < cableNetworks.size(); i++)
+                newNetworks.add(new EnergyNetwork(cableNetworks.get(i)));
+
+        //Check the network for any components which are no longer part of the network
+        checkNetwork(world);
 
         return newNetworks;
     }
@@ -110,6 +124,19 @@ public class EnergyNetwork
     }
 
     /**
+     * Checks if the given position is a cable in the network or is adjacent to a cable in this network
+     */
+    private boolean isComponentInNetwork(BlockPos pos)
+    {
+        if(cables.contains(pos))
+            return true;
+        for(BlockPos cablePos : cables)
+            if(CommonUtils.areBlocksAdjacent(cablePos, pos))
+                return true;
+        return false;
+    }
+
+    /**
      * Checks every block in the network and returns whether it has changed
      */
     public boolean checkNetwork(World world)
@@ -120,7 +147,7 @@ public class EnergyNetwork
         while(iterator.hasNext())
         {
             BlockPos pos = iterator.next();
-            if(!CommonUtils.isCable(world, pos))
+            if(!CommonUtils.isCable(world, pos) || !isComponentInNetwork(pos))
             {
                 //Split up networks if break in this network
                 EnergyHandler.onCableRemoved(world, pos);
@@ -132,8 +159,9 @@ public class EnergyNetwork
         iterator = inputs.iterator();
         while(iterator.hasNext())
         {
-            IEnergy energy = IEnergy.create(world, iterator.next(), null);
-            if(energy == null || ! energy.canInput())
+            BlockPos pos = iterator.next();
+            IEnergy energy = IEnergy.create(world, pos, null);
+            if(energy == null || !energy.canInput() || !isComponentInNetwork(pos))
             {
                 changed = true;
                 iterator.remove();
@@ -143,8 +171,9 @@ public class EnergyNetwork
         iterator = outputs.iterator();
         while(iterator.hasNext())
         {
-            IEnergy energy = IEnergy.create(world, iterator.next(), null);
-            if(energy == null || ! energy.canOutput())
+            BlockPos pos = iterator.next();
+            IEnergy energy = IEnergy.create(world, pos, null);
+            if(energy == null || !energy.canOutput() || !isComponentInNetwork(pos))
             {
                 changed = true;
                 iterator.remove();
@@ -229,5 +258,11 @@ public class EnergyNetwork
     public void removeOutput(BlockPos pos)
     {
         outputs.remove(pos);
+    }
+
+    @Override
+    public String toString()
+    {
+        return Integer.toHexString(hashCode());
     }
 }
