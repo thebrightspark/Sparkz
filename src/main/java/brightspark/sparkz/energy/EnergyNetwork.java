@@ -120,7 +120,7 @@ public class EnergyNetwork
         while(iterator.hasNext())
         {
             BlockPos pos = iterator.next();
-            if(!isCableBlock(world, pos))
+            if(!CommonUtils.isCable(world, pos))
             {
                 //Split up networks if break in this network
                 EnergyHandler.onCableRemoved(world, pos);
@@ -133,7 +133,7 @@ public class EnergyNetwork
         while(iterator.hasNext())
         {
             IEnergy energy = IEnergy.create(world, iterator.next(), null);
-            if(energy == null || !energy.canInput())
+            if(energy == null || ! energy.canInput())
             {
                 changed = true;
                 iterator.remove();
@@ -144,7 +144,7 @@ public class EnergyNetwork
         while(iterator.hasNext())
         {
             IEnergy energy = IEnergy.create(world, iterator.next(), null);
-            if(energy == null || !energy.canOutput())
+            if(energy == null || ! energy.canOutput())
             {
                 changed = true;
                 iterator.remove();
@@ -152,11 +152,6 @@ public class EnergyNetwork
         }
 
         return changed;
-    }
-
-    private boolean isCableBlock(IBlockAccess world, BlockPos pos)
-    {
-        return world.getBlockState(pos).getBlock() instanceof BlockCable;
     }
 
     public boolean hasCables()
@@ -184,6 +179,11 @@ public class EnergyNetwork
             if(CommonUtils.areBlocksAdjacent(pos, componentPos))
                 return true;
         return false;
+    }
+
+    public List<BlockPos> getCables()
+    {
+        return cables;
     }
 
     public int getNumCables()

@@ -59,6 +59,11 @@ public class CommonUtils
         return num;
     }
 
+    public static boolean isCable(IBlockAccess world, BlockPos pos)
+    {
+        return world.getBlockState(pos).getBlock() instanceof BlockCable;
+    }
+
     /**
      * Finds an adjacent network that's not one of the given energy networks
      */
@@ -83,5 +88,51 @@ public class CommonUtils
             }
         }
         return adjacentNetworks;
+    }
+
+    public static List<List<BlockPos>> getAllAdjacentConnectedCables(IBlockAccess world, BlockPos pos)
+    {
+        List<List<BlockPos>> networks = new ArrayList<>();
+        for(EnumFacing facing : EnumFacing.VALUES)
+        {
+            BlockPos nextPos = pos.offset(facing);
+            boolean alreadyInNetwork = false;
+            for(List<BlockPos> network : networks)
+            {
+                if(network.contains(nextPos))
+                {
+                    alreadyInNetwork = true;
+                    break;
+                }
+            }
+            if(alreadyInNetwork)
+                continue;
+            List<BlockPos> connectedCables = getAllAdjacentConnectedCables(world, new ArrayList<>(), nextPos);
+            if(!connectedCables.isEmpty())
+                networks.add(connectedCables);
+        }
+        return networks;
+    }
+
+    public static List<BlockPos> getAllConnectedCables(IBlockAccess world, BlockPos pos)
+    {
+        List<BlockPos> cables = new ArrayList<>();
+        if(!isCable(world, pos)) return cables;
+        cables.add(pos);
+        return getAllAdjacentConnectedCables(world, cables, pos);
+    }
+
+    private static List<BlockPos> getAllAdjacentConnectedCables(IBlockAccess world, List<BlockPos> cables, BlockPos pos)
+    {
+        for(EnumFacing facing : EnumFacing.VALUES)
+        {
+            BlockPos nextPos = pos.offset(facing);
+            if(isCable(world, nextPos) && !cables.contains(nextPos))
+            {
+                cables.add(nextPos);
+                getAllAdjacentConnectedCables(world, cables, nextPos);
+            }
+        }
+        return cables;
     }
 }

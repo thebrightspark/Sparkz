@@ -19,13 +19,13 @@ public class RegHandler
     {
         event.getRegistry().registerAll(SItems.getItems());
         event.getRegistry().registerAll(SBlocks.getItemBlocks());
-        SBlocks.regTileEntities();
     }
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event)
     {
         event.getRegistry().registerAll(SBlocks.getBlocks());
+        SBlocks.regTileEntities();
     }
 
     @SideOnly(Side.CLIENT)
