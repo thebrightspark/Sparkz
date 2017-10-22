@@ -2,7 +2,7 @@ package brightspark.sparkz;
 
 import brightspark.sparkz.init.SBlocks;
 import brightspark.sparkz.init.SItems;
-import brightspark.sparkz.messages.MessageGetCables;
+import brightspark.sparkz.messages.MessageGetComponents;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
@@ -41,7 +41,7 @@ public class Sparkz
     {
         logger = event.getModLog();
         network = NetworkRegistry.INSTANCE.newSimpleChannel(MOD_ID);
-        network.registerMessage(MessageGetCables.Handler.class, MessageGetCables.class, 0, Side.CLIENT);
+        network.registerMessage(MessageGetComponents.Handler.class, MessageGetComponents.class, 0, Side.CLIENT);
     }
 
     @Mod.EventHandler

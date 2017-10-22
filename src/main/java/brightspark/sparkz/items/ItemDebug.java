@@ -3,7 +3,7 @@ package brightspark.sparkz.items;
 import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.energy.EnergyNetwork;
-import brightspark.sparkz.messages.MessageGetCables;
+import brightspark.sparkz.messages.MessageGetComponents;
 import brightspark.sparkz.util.CommonUtils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -22,23 +22,15 @@ import java.util.List;
 
 public class ItemDebug extends Item
 {
-    private List<BlockPos> cablesToHighlight = null;
+    public List<BlockPos> cablesToHighlight = null;
+    public List<BlockPos> inputsToHighlight = null;
+    public List<BlockPos> outputsToHighlight = null;
 
     public ItemDebug()
     {
         setUnlocalizedName("debug");
         setRegistryName("debug");
         setCreativeTab(Sparkz.TAB);
-    }
-
-    public void setCablesToHighlight(List<BlockPos> cables)
-    {
-        cablesToHighlight = cables;
-    }
-
-    public List<BlockPos> getCablesToHighlight()
-    {
-        return cablesToHighlight;
     }
 
     @Override
@@ -49,6 +41,8 @@ public class ItemDebug extends Item
             if(world.isRemote)
             {
                 cablesToHighlight = null;
+                inputsToHighlight = null;
+                outputsToHighlight = null;
                 player.sendMessage(new TextComponentString("Cleared saved network"));
             }
             return new ActionResult<>(EnumActionResult.SUCCESS, player.getHeldItem(hand));
@@ -67,12 +61,14 @@ public class ItemDebug extends Item
             EnergyNetwork network = cable.getNetwork();
             if(network != null)
             {
-                List<BlockPos> cables;
+                List<BlockPos> cables, inputs, outputs;
                 if(player.isSneaking())
                     cables = CommonUtils.getAllConnectedCables(world, pos);
                 else
                     cables = network.getCables();
-                Sparkz.network.sendTo(new MessageGetCables(cables), (EntityPlayerMP) player);
+                inputs = network.getInputs();
+                outputs = network.getOutputs();
+                Sparkz.network.sendTo(new MessageGetComponents(cables, inputs, outputs), (EntityPlayerMP) player);
                 player.sendMessage(new TextComponentString(
                         "Cable at " + pos +
                                 "\nPart of network: " + network +

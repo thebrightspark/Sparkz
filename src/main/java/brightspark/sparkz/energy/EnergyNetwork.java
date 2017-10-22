@@ -230,6 +230,11 @@ public class EnergyNetwork
         cables.remove(pos);
     }
 
+    public List<BlockPos> getInputs()
+    {
+        return inputs;
+    }
+
     public int getNumInputs()
     {
         return inputs.size();
@@ -243,6 +248,11 @@ public class EnergyNetwork
     public void removeInput(BlockPos pos)
     {
         inputs.remove(pos);
+    }
+
+    public List<BlockPos> getOutputs()
+    {
+        return outputs;
     }
 
     public int getNumOutputs()
