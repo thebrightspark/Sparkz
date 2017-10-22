@@ -4,6 +4,7 @@ import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.util.CommonUtils;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -49,6 +50,18 @@ public class NetworkHandler
         if(te instanceof TileCable)
         {
             ((TileCable) te).setNetwork(network);
+
+            //Check for IO blocks around and add them to the network
+            for(EnumFacing side : EnumFacing.VALUES)
+            {
+                BlockPos neighbour = cablePos.offset(side);
+                IEnergy energy = IEnergy.create(world, neighbour, null);
+                if(energy != null)
+                {
+                    if(energy.canInput())   network.addInput(neighbour);
+                    if(energy.canOutput())  network.addOutput(neighbour);
+                }
+            }
             return true;
         }
         return false;

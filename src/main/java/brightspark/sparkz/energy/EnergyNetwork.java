@@ -9,10 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class EnergyNetwork
 {
@@ -98,12 +95,10 @@ public class EnergyNetwork
 
     public void update(World world)
     {
-        //TODO: On EnergyNetwork update - transfer power from inputs to outputs
+        //On EnergyNetwork update - transfer power from inputs to outputs
         //Check how much is requested from outputs, and then distribute inputs to them evenly
 
-        long totalOutputRequested = 0;
-
-        //Get energy storage for outputs
+        //Get outputs
         List<IEnergy> outputEnergy = new ArrayList<>();
         for(BlockPos pos : outputs)
         {
@@ -112,14 +107,64 @@ public class EnergyNetwork
             {
                 IEnergy energy = IEnergy.create(te, null);
                 if(energy != null)
-                {
                     outputEnergy.add(energy);
-                    totalOutputRequested += energy.getMaxInput();
+            }
+        }
+
+        //If nothing to output to, then just return
+        if(outputEnergy.isEmpty()) return;
+
+        //Sort outputs by max output
+        outputEnergy.sort(Comparator.comparingLong(IEnergy::getMaxOutput));
+
+        //Log
+        StringBuilder sb = new StringBuilder("Outputs: ");
+        for(IEnergy output : outputEnergy)
+            sb.append(output.getMaxOutput()).append(", ");
+        Sparkz.logger.info(sb.toString());
+
+        //Get inputs
+        long totalInputProvided = 0;
+
+        List<IEnergy> inputEnergy = new ArrayList<>();
+        for(BlockPos pos : inputs)
+        {
+            TileEntity te = world.getTileEntity(pos);
+            if(te != null)
+            {
+                IEnergy energy = IEnergy.create(te, null);
+                if(energy != null)
+                {
+                    inputEnergy.add(energy);
+                    totalInputProvided += energy.getMaxOutput();
                 }
             }
         }
 
-        //TODO: Collect inputs and distribute to outputs evenly
+        //Sort inputs by max input
+        inputEnergy.sort(Comparator.comparingLong(IEnergy::getMaxInput));
+
+        long inputProvided = totalInputProvided;
+
+        //Evenly distribute energy to outputs
+        for(IEnergy output : outputEnergy)
+        {
+            long provided = inputProvided / outputEnergy.size();
+            long actuallyAccepted = output.inputEnergy(provided);
+            inputProvided -= actuallyAccepted;
+        }
+
+        //Get the amount actually provided to outputs
+        long inputUsed = totalInputProvided - inputProvided;
+        int inputsLeftToExtractFrom = inputEnergy.size();
+
+        //Evenly draw energy from inputs
+        for(IEnergy input : inputEnergy)
+        {
+            long taking = inputUsed / inputsLeftToExtractFrom;
+            long actuallyTaken = input.outputEnergy(taking);
+            inputUsed -= actuallyTaken;
+        }
     }
 
     /**
@@ -209,6 +254,11 @@ public class EnergyNetwork
         return false;
     }
 
+    public boolean removeIO(BlockPos pos)
+    {
+        return inputs.remove(pos) || outputs.remove(pos);
+    }
+
     public List<BlockPos> getCables()
     {
         return cables;
@@ -221,7 +271,7 @@ public class EnergyNetwork
 
     public void addCable(BlockPos pos)
     {
-        cables.add(pos);
+        if(!cables.contains(pos)) cables.add(pos);
     }
 
     public void removeCable(BlockPos pos)
@@ -241,7 +291,8 @@ public class EnergyNetwork
 
     public void addInput(BlockPos pos)
     {
-        inputs.add(pos);
+        Sparkz.logger.info("Adding {} as input to network {}", pos, this);
+        if(!inputs.contains(pos)) inputs.add(pos);
     }
 
     public void removeInput(BlockPos pos)
@@ -261,7 +312,8 @@ public class EnergyNetwork
 
     public void addOutput(BlockPos pos)
     {
-        outputs.add(pos);
+        Sparkz.logger.info("Adding {} as output to network {}", pos, this);
+        if(!outputs.contains(pos)) outputs.add(pos);
     }
 
     public void removeOutput(BlockPos pos)

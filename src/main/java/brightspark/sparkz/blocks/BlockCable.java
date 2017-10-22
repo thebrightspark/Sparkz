@@ -1,9 +1,11 @@
 package brightspark.sparkz.blocks;
 
+import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.energy.IEnergy;
 import brightspark.sparkz.energy.NetworkHandler;
 import brightspark.sparkz.util.CommonUtils;
 import com.google.common.collect.ImmutableList;
+import net.minecraft.block.Block;
 import net.minecraft.block.properties.PropertyBool;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
@@ -16,6 +18,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.relauncher.Side;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -70,6 +74,7 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     public void onBlockAdded(World world, BlockPos pos, IBlockState state)
     {
         super.onBlockAdded(world, pos, state);
+        if(world.isRemote) return;
         NetworkHandler.addNewComponent(world, pos);
     }
 
@@ -88,16 +93,29 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     }
 
     @Override
-    public void onNeighborChange(IBlockAccess world, BlockPos pos, BlockPos neighbor)
+    public void neighborChanged(IBlockState state, World world, BlockPos pos, Block block, BlockPos neighbour)
     {
-        super.onNeighborChange(world, pos, neighbor);
+        Sparkz.logger.info("Neighbour change!");
         TileCable cableTE = getTileEntity(world, pos);
-        cableTE.determineSideIO(world, neighbor);
-        IEnergy energy = IEnergy.create(world, neighbor, null);
-        if(energy != null)
+        cableTE.determineSideIO(world, neighbour);
+        if(FMLCommonHandler.instance().getEffectiveSide() == Side.CLIENT)
+            return;
+
+        Sparkz.logger.info("Neighbour change Server!");
+
+        if(world.isAirBlock(neighbour))
         {
-            if(energy.canInput())   cableTE.getNetwork().addInput(neighbor);
-            if(energy.canOutput())  cableTE.getNetwork().addOutput(neighbor);
+            boolean removed = cableTE.getNetwork().removeIO(neighbour);
+            if(removed) Sparkz.logger.info("Removed IO {} from network {}", neighbour, cableTE.getNetwork());
+        }
+        else
+        {
+            IEnergy energy = IEnergy.create(world, neighbour, null);
+            if(energy != null)
+            {
+                if(energy.canInput()) cableTE.getNetwork().addInput(neighbour);
+                if(energy.canOutput()) cableTE.getNetwork().addOutput(neighbour);
+            }
         }
     }
 

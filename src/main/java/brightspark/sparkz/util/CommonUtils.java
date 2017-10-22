@@ -3,6 +3,7 @@ package brightspark.sparkz.util;
 import brightspark.sparkz.blocks.BlockCable;
 import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.energy.EnergyNetwork;
+import brightspark.sparkz.energy.IEnergy;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
@@ -32,15 +33,7 @@ public class CommonUtils
      */
     public static boolean canCableConnect(IBlockAccess world, BlockPos pos)
     {
-        return canCableConnect(world.getBlockState(pos));
-    }
-
-    /**
-     * Returns whether cable can be connected to the given block state
-     */
-    public static boolean canCableConnect(IBlockState state)
-    {
-        return state.getBlock() instanceof BlockCable;
+        return isCable(world, pos) || isIO(world, pos);
     }
 
     /**
@@ -61,6 +54,12 @@ public class CommonUtils
     public static boolean isCable(IBlockAccess world, BlockPos pos)
     {
         return world.getBlockState(pos).getBlock() instanceof BlockCable;
+    }
+
+    public static boolean isIO(IBlockAccess world, BlockPos pos)
+    {
+        IEnergy energy = IEnergy.create(world, pos, null);
+        return energy != null && (energy.canInput() || energy.canOutput());
     }
 
     /**
