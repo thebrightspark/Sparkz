@@ -59,7 +59,14 @@ public class TileCable extends TileEntity
             return;
         }
         IEnergy neighbourEnergy = IEnergy.create(world, neighbourPos, side.getOpposite());
-        ECableIO io = neighbourEnergy != null ? neighbourEnergy.canOutput() ? ECableIO.INPUT : ECableIO.OUTPUT : ECableIO.NONE;
+        ECableIO io = ECableIO.NONE;
+        if(neighbourEnergy != null)
+        {
+            if(neighbourEnergy.canOutput())
+                io = ECableIO.INPUT;
+            else if(neighbourEnergy.canInput())
+                io = ECableIO.OUTPUT;
+        }
         setSideIO(side, io);
     }
 }

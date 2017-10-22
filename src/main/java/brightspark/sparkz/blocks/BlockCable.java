@@ -1,5 +1,6 @@
 package brightspark.sparkz.blocks;
 
+import brightspark.sparkz.energy.IEnergy;
 import brightspark.sparkz.energy.NetworkHandler;
 import brightspark.sparkz.util.CommonUtils;
 import com.google.common.collect.ImmutableList;
@@ -90,7 +91,14 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     public void onNeighborChange(IBlockAccess world, BlockPos pos, BlockPos neighbor)
     {
         super.onNeighborChange(world, pos, neighbor);
-        getTileEntity(world, pos).determineSideIO(world, neighbor);
+        TileCable cableTE = getTileEntity(world, pos);
+        cableTE.determineSideIO(world, neighbor);
+        IEnergy energy = IEnergy.create(world, neighbor, null);
+        if(energy != null)
+        {
+            if(energy.canInput())   cableTE.getNetwork().addInput(neighbor);
+            if(energy.canOutput())  cableTE.getNetwork().addOutput(neighbor);
+        }
     }
 
     @Override
