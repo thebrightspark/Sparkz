@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 @Mod.EventBusSubscriber
-public class EnergyHandler
+public class NetworkHandler
 {
     //TODO: Need to think about how this will all work with dimensions!
 

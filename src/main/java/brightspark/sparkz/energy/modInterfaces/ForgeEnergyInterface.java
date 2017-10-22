@@ -1,5 +1,6 @@
-package brightspark.sparkz.energy;
+package brightspark.sparkz.energy.modInterfaces;
 
+import brightspark.sparkz.energy.IEnergy;
 import net.minecraftforge.energy.IEnergyStorage;
 
 public class ForgeEnergyInterface implements IEnergy
@@ -24,26 +25,38 @@ public class ForgeEnergyInterface implements IEnergy
     }
 
     @Override
-    public int getMaxInput()
+    public long getMaxInput()
     {
         return energy.receiveEnergy(Integer.MAX_VALUE, true);
     }
 
     @Override
-    public int getMaxOutput()
+    public long getMaxOutput()
     {
         return energy.extractEnergy(Integer.MAX_VALUE, true);
     }
 
     @Override
-    public int inputEnergy(int amount)
+    public long inputEnergy(long amount)
     {
-        return energy.receiveEnergy(amount, false);
+        return energy.receiveEnergy((int) amount, false);
     }
 
     @Override
-    public int outputEnergy(int maxAmount)
+    public long outputEnergy(long maxAmount)
     {
-        return energy.extractEnergy(maxAmount, false);
+        return energy.extractEnergy((int) maxAmount, false);
+    }
+
+    @Override
+    public long getEnergyStored()
+    {
+        return energy.getEnergyStored();
+    }
+
+    @Override
+    public long getMaxEnergyStored()
+    {
+        return energy.getMaxEnergyStored();
     }
 }

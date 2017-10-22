@@ -1,6 +1,5 @@
 package brightspark.sparkz.util;
 
-import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.blocks.BlockCable;
 import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.energy.EnergyNetwork;

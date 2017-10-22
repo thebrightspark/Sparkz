@@ -1,6 +1,6 @@
 package brightspark.sparkz.blocks;
 
-import brightspark.sparkz.energy.EnergyHandler;
+import brightspark.sparkz.energy.NetworkHandler;
 import brightspark.sparkz.util.CommonUtils;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.block.properties.PropertyBool;
@@ -69,21 +69,21 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     public void onBlockAdded(World world, BlockPos pos, IBlockState state)
     {
         super.onBlockAdded(world, pos, state);
-        EnergyHandler.addNewComponent(world, pos);
+        NetworkHandler.addNewComponent(world, pos);
     }
 
     @Override
     public void onBlockDestroyedByExplosion(World world, BlockPos pos, Explosion explosionIn)
     {
         super.onBlockDestroyedByExplosion(world, pos, explosionIn);
-        EnergyHandler.onCableRemoved(world, pos);
+        NetworkHandler.onCableRemoved(world, pos);
     }
 
     @Override
     public void onBlockHarvested(World world, BlockPos pos, IBlockState state, EntityPlayer player)
     {
         super.onBlockHarvested(world, pos, state, player);
-        EnergyHandler.onCableRemoved(world, pos);
+        NetworkHandler.onCableRemoved(world, pos);
     }
 
     @Override

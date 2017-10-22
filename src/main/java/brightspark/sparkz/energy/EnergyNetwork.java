@@ -1,7 +1,6 @@
 package brightspark.sparkz.energy;
 
 import brightspark.sparkz.Sparkz;
-import brightspark.sparkz.blocks.BlockCable;
 import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.util.CommonUtils;
 import net.minecraft.tileentity.TileEntity;
@@ -72,7 +71,7 @@ public class EnergyNetwork
             cables.addAll(otherNetwork.cables);
             inputs.addAll(otherNetwork.inputs);
             outputs.addAll(otherNetwork.outputs);
-            EnergyHandler.removeNetwork(otherNetwork);
+            NetworkHandler.removeNetwork(otherNetwork);
         }
     }
 
@@ -102,7 +101,7 @@ public class EnergyNetwork
         //TODO: On EnergyNetwork update - transfer power from inputs to outputs
         //Check how much is requested from outputs, and then distribute inputs to them evenly
 
-        int totalOutputRequested = 0;
+        long totalOutputRequested = 0;
 
         //Get energy storage for outputs
         List<IEnergy> outputEnergy = new ArrayList<>();
@@ -150,7 +149,7 @@ public class EnergyNetwork
             if(!CommonUtils.isCable(world, pos) || !isComponentInNetwork(pos))
             {
                 //Split up networks if break in this network
-                EnergyHandler.onCableRemoved(world, pos);
+                NetworkHandler.onCableRemoved(world, pos);
                 changed = true;
                 iterator.remove();
             }
