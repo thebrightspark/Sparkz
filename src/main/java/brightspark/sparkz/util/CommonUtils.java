@@ -10,8 +10,8 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class CommonUtils
 {
@@ -63,41 +63,33 @@ public class CommonUtils
     }
 
     /**
-     * Finds an adjacent network that's not one of the given energy networks
+     * Finds an adjacent network
      */
-    public static List<EnergyNetwork> findAdjacentNetworks(IBlockAccess world, BlockPos pos, EnergyNetwork... networks)
+    public static Set<EnergyNetwork> findAdjacentNetworks(IBlockAccess world, BlockPos pos)
     {
-        List<EnergyNetwork> adjacentNetworks = new ArrayList<>();
+        Set<EnergyNetwork> adjacentNetworks = new HashSet<>();
         for(EnumFacing side : EnumFacing.values())
         {
             TileEntity te = world.getTileEntity(pos.offset(side));
-            if(te != null && te instanceof TileCable)
+            if(te instanceof TileCable)
             {
                 EnergyNetwork otherNetwork = ((TileCable) te).getNetwork();
-                boolean isBlacklistedNetwork = false;
-                for(EnergyNetwork network : networks)
-                    if(otherNetwork.equals(network))
-                    {
-                        isBlacklistedNetwork = true;
-                        break;
-                    }
-                if(!isBlacklistedNetwork && !adjacentNetworks.contains(otherNetwork))
-                    adjacentNetworks.add(otherNetwork);
+                adjacentNetworks.add(otherNetwork);
             }
         }
         return adjacentNetworks;
     }
 
-    public static List<List<BlockPos>> getAllAdjacentConnectedCables(IBlockAccess world, BlockPos pos)
+    public static Set<Set<BlockPos>> getAllAdjacentConnectedCables(IBlockAccess world, BlockPos pos)
     {
-        List<List<BlockPos>> networks = new ArrayList<>();
+        Set<Set<BlockPos>> networks = new HashSet<>();
         for(EnumFacing facing : EnumFacing.VALUES)
         {
             BlockPos nextPos = pos.offset(facing);
             if(!CommonUtils.isCable(world, nextPos))
                 continue;
             boolean alreadyInNetwork = false;
-            for(List<BlockPos> network : networks)
+            for(Set<BlockPos> network : networks)
             {
                 if(network.contains(nextPos))
                 {
@@ -107,7 +99,7 @@ public class CommonUtils
             }
             if(alreadyInNetwork)
                 continue;
-            List<BlockPos> connectedCables = getAllAdjacentConnectedCables(world, new ArrayList<>(), nextPos);
+            Set<BlockPos> connectedCables = getAllAdjacentConnectedCables(world, new HashSet<>(), nextPos);
             connectedCables.add(nextPos);
             if(!connectedCables.isEmpty())
                 networks.add(connectedCables);
@@ -115,15 +107,15 @@ public class CommonUtils
         return networks;
     }
 
-    public static List<BlockPos> getAllConnectedCables(IBlockAccess world, BlockPos pos)
+    public static Set<BlockPos> getAllConnectedCables(IBlockAccess world, BlockPos pos)
     {
-        List<BlockPos> cables = new ArrayList<>();
+        Set<BlockPos> cables = new HashSet<>();
         if(!isCable(world, pos)) return cables;
         cables.add(pos);
         return getAllAdjacentConnectedCables(world, cables, pos);
     }
 
-    private static List<BlockPos> getAllAdjacentConnectedCables(IBlockAccess world, List<BlockPos> cables, BlockPos pos)
+    private static Set<BlockPos> getAllAdjacentConnectedCables(IBlockAccess world, Set<BlockPos> cables, BlockPos pos)
     {
         for(EnumFacing facing : EnumFacing.VALUES)
         {

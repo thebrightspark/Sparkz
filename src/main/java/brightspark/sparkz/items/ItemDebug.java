@@ -18,13 +18,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 
-import java.util.List;
+import java.util.Set;
 
 public class ItemDebug extends Item
 {
-    public List<BlockPos> cablesToHighlight = null;
-    public List<BlockPos> inputsToHighlight = null;
-    public List<BlockPos> outputsToHighlight = null;
+    public Set<BlockPos> cablesToHighlight = null;
+    public Set<BlockPos> inputsToHighlight = null;
+    public Set<BlockPos> outputsToHighlight = null;
 
     public ItemDebug()
     {
@@ -61,7 +61,7 @@ public class ItemDebug extends Item
             EnergyNetwork network = cable.getNetwork();
             if(network != null)
             {
-                List<BlockPos> cables, inputs, outputs;
+                Set<BlockPos> cables, inputs, outputs;
                 if(player.isSneaking())
                     cables = CommonUtils.getAllConnectedCables(world, pos);
                 else

@@ -2,7 +2,7 @@ package brightspark.sparkz.blocks;
 
 import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.energy.IEnergy;
-import brightspark.sparkz.energy.NetworkHandler;
+import brightspark.sparkz.energy.NetworkData;
 import brightspark.sparkz.util.CommonUtils;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.block.Block;
@@ -18,8 +18,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.relauncher.Side;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -74,35 +72,35 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     public void onBlockAdded(World world, BlockPos pos, IBlockState state)
     {
         super.onBlockAdded(world, pos, state);
-        if(world.isRemote) return;
-        NetworkHandler.addNewComponent(world, pos);
+        if(!world.isRemote)
+            NetworkData.addNewComponent(world, pos);
     }
 
     @Override
     public void onBlockDestroyedByExplosion(World world, BlockPos pos, Explosion explosionIn)
     {
         super.onBlockDestroyedByExplosion(world, pos, explosionIn);
-        NetworkHandler.onCableRemoved(world, pos);
+        if(!world.isRemote)
+            NetworkData.onCableRemoved(world, pos);
     }
 
     @Override
     public void onBlockHarvested(World world, BlockPos pos, IBlockState state, EntityPlayer player)
     {
         super.onBlockHarvested(world, pos, state, player);
-        NetworkHandler.onCableRemoved(world, pos);
+        if(!world.isRemote)
+            NetworkData.onCableRemoved(world, pos);
     }
 
     @Override
     public void neighborChanged(IBlockState state, World world, BlockPos pos, Block block, BlockPos neighbour)
     {
+        //TODO: This is only ever called on the server side. Do I need to send a packet to the client for TileCable#determineSideIO?
         Sparkz.logger.info("Neighbour change!");
         TileCable cableTE = getTileEntity(world, pos);
         cableTE.determineSideIO(world, neighbour);
-        if(FMLCommonHandler.instance().getEffectiveSide() == Side.CLIENT)
-            return;
 
-        Sparkz.logger.info("Neighbour change Server!");
-
+        //Try to add or remove the neighbour as IO in the network
         if(world.isAirBlock(neighbour))
         {
             boolean removed = cableTE.getNetwork().removeIO(neighbour);

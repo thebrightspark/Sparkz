@@ -1,13 +1,16 @@
 package brightspark.sparkz.init;
 
+import brightspark.sparkz.blocks.TileCable;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -17,23 +20,25 @@ public class RegHandler
     @SubscribeEvent
     public static void registerItems(RegistryEvent.Register<Item> event)
     {
-        event.getRegistry().registerAll(SItems.getItems());
-        event.getRegistry().registerAll(SBlocks.getItemBlocks());
+        event.getRegistry().registerAll(
+                SItems.debug,
+                new ItemBlock(SBlocks.cable).setRegistryName(SBlocks.cable.getRegistryName())
+        );
     }
 
     @SubscribeEvent
     public static void registerBlocks(RegistryEvent.Register<Block> event)
     {
-        event.getRegistry().registerAll(SBlocks.getBlocks());
-        SBlocks.regTileEntities();
+        event.getRegistry().register(SBlocks.cable);
+        GameRegistry.registerTileEntity(TileCable.class, SBlocks.cable.getRegistryName().getResourcePath());
     }
 
     @SideOnly(Side.CLIENT)
     @SubscribeEvent
     public static void regModels(ModelRegistryEvent event)
     {
-        SItems.ITEMS.forEach(RegHandler::regModel);
-        SBlocks.BLOCKS.forEach(RegHandler::regModel);
+        regModel(SItems.debug);
+        regModel(SBlocks.cable);
     }
 
     @SideOnly(Side.CLIENT)

@@ -14,7 +14,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.awt.*;
-import java.util.List;
+import java.util.Set;
 
 @Mod.EventBusSubscriber
 public class ClientHandler
@@ -57,17 +57,17 @@ public class ClientHandler
         ItemStack heldItem = ClientUtils.getHeldItem(SItems.debug);
         if(heldItem == null) return;
 
-        List<BlockPos> cables = SItems.debug.cablesToHighlight;
+        Set<BlockPos> cables = SItems.debug.cablesToHighlight;
         if(cables != null)
             for(BlockPos pos : cables)
                 renderBox(pos, event.getPartialTicks(), cableColour);
 
-        List<BlockPos> inputs = SItems.debug.outputsToHighlight;
+        Set<BlockPos> inputs = SItems.debug.outputsToHighlight;
         if(inputs != null)
             for(BlockPos pos : inputs)
                 renderBox(pos, event.getPartialTicks(), inputColour);
 
-        List<BlockPos> outputs = SItems.debug.inputsToHighlight;
+        Set<BlockPos> outputs = SItems.debug.inputsToHighlight;
         if(outputs != null)
             for(BlockPos pos : outputs)
                 renderBox(pos, event.getPartialTicks(), outputColour);

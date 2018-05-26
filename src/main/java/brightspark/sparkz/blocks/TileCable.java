@@ -1,11 +1,15 @@
 package brightspark.sparkz.blocks;
 
+import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.energy.EnergyNetwork;
 import brightspark.sparkz.energy.IEnergy;
+import brightspark.sparkz.energy.NetworkData;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -68,5 +72,32 @@ public class TileCable extends TileEntity
                 io = ECableIO.OUTPUT;
         }
         setSideIO(side, io);
+    }
+
+    @Override
+    protected void setWorldCreate(World worldIn)
+    {
+        setWorld(worldIn);
+    }
+
+    @Override
+    public NBTTagCompound writeToNBT(NBTTagCompound nbt)
+    {
+        super.writeToNBT(nbt);
+        if(network != null)
+            nbt.setUniqueId("network", network.getUuid());
+        return nbt;
+    }
+
+    @Override
+    public void readFromNBT(NBTTagCompound nbt)
+    {
+        super.readFromNBT(nbt);
+        if(nbt.hasKey("network"))
+            network = NetworkData.getNetwork(world, nbt.getUniqueId("network"));
+        else
+            //Try see if this cable is in an existing network instead
+             network = NetworkData.getNetworkWithCable(world, pos);
+        Sparkz.logger.info("---------- Loading network for cable at {} -> {}", pos, network);
     }
 }

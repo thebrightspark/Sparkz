@@ -3,28 +3,44 @@ package brightspark.sparkz.energy;
 import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.util.CommonUtils;
+import com.google.common.collect.Iterables;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagLong;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 
 import java.util.*;
 
-public class EnergyNetwork
+public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
 {
-    private List<BlockPos> cables = new ArrayList<>();
-    private List<BlockPos> inputs = new ArrayList<>();
-    private List<BlockPos> outputs = new ArrayList<>();
+    private UUID uuid = UUID.randomUUID();
+    private World world;
+    private Set<BlockPos> cables = new HashSet<>();
+    private Set<BlockPos> inputs = new HashSet<>();
+    private Set<BlockPos> outputs = new HashSet<>();
 
-    public EnergyNetwork(BlockPos... cables)
+    public EnergyNetwork(World world, BlockPos... cables)
     {
+        this.world = world;
         Collections.addAll(this.cables, cables);
     }
 
-    public EnergyNetwork(List<BlockPos> cables)
+    public EnergyNetwork(World world, Collection<BlockPos> cables)
     {
+        this.world = world;
         this.cables.addAll(cables);
+    }
+
+    public EnergyNetwork(World world, NBTTagCompound nbt)
+    {
+        this.world = world;
+        deserializeNBT(nbt);
     }
 
     /**
@@ -41,7 +57,7 @@ public class EnergyNetwork
         for(EnumFacing facing : EnumFacing.VALUES)
         {
             BlockPos sidePos = pos.offset(facing);
-            if(cables.contains(sidePos) && (ignorePos == null || !sidePos.equals(ignorePos)))
+            if(cables.contains(sidePos) && !sidePos.equals(ignorePos))
                 positions.add(sidePos);
         }
         return positions;
@@ -50,25 +66,17 @@ public class EnergyNetwork
     /**
      * Merges the networks into this one and then removes the other networks
      */
-    public void mergeWith(IBlockAccess world, List<EnergyNetwork> networks)
-    {
-        mergeWith(world, networks.toArray(new EnergyNetwork[networks.size()]));
-    }
-
-    /**
-     * Merges the networks into this one and then removes the other networks
-     */
     @SuppressWarnings("ConstantConditions")
-    public void mergeWith(IBlockAccess world, EnergyNetwork... networks)
+    public void mergeWith(Set<EnergyNetwork> networks)
     {
-        Sparkz.logger.info("Merging {} with {} other networks", this, networks.length);
+        Sparkz.logger.info("Merging {} with {} other networks", this, networks.size());
         for(EnergyNetwork otherNetwork : networks)
         {
             otherNetwork.cables.forEach((pos) -> ((TileCable) world.getTileEntity(pos)).setNetwork(this));
             cables.addAll(otherNetwork.cables);
             inputs.addAll(otherNetwork.inputs);
             outputs.addAll(otherNetwork.outputs);
-            NetworkHandler.removeNetwork(otherNetwork);
+            NetworkData.removeNetwork(world, otherNetwork);
         }
     }
 
@@ -76,24 +84,31 @@ public class EnergyNetwork
      * Splits this network if the removed position causes a gap in this network
      * Returns the new networks as a result of the split
      */
-    public List<EnergyNetwork> splitAt(World world, BlockPos pos)
+    public void splitAt(BlockPos pos)
     {
-        List<EnergyNetwork> newNetworks = new ArrayList<>(1);
+        Set<Set<BlockPos>> cableNetworks = CommonUtils.getAllAdjacentConnectedCables(world, pos);
 
-        List<List<BlockPos>> cableNetworks = CommonUtils.getAllAdjacentConnectedCables(world, pos);
-        if(cableNetworks.size() > 0)
-            cables = cableNetworks.get(0);
-        if(cableNetworks.size() > 1)
-            for(int i = 1; i < cableNetworks.size(); i++)
-                newNetworks.add(new EnergyNetwork(cableNetworks.get(i)));
+        int size = cableNetworks.size();
+        if(size == 1)
+            //No need to create new networks
+            cables = Iterables.getOnlyElement(cableNetworks);
+        else
+        {
+            //We don't need to replace one of the networks - we can re-use this one
+            Iterator<Set<BlockPos>> iter = cableNetworks.iterator();
+            Set<BlockPos> first = iter.next();
+            iter.remove();
 
-        //Check the network for any components which are no longer part of the network
-        checkNetwork(world);
+            //Remove all cables from this network that aren't in the removed set
+            cables.removeIf(cable -> !first.contains(cable));
 
-        return newNetworks;
+            //Create new networks
+            Sparkz.logger.info("Adding {} new networks due to split of network {}", cableNetworks.size(), this);
+            cableNetworks.forEach(c -> NetworkData.addNewNetwork(world, c));
+        }
     }
 
-    public void update(World world)
+    public void update()
     {
         //On EnergyNetwork update - transfer power from inputs to outputs
         //Check how much is requested from outputs, and then distribute inputs to them evenly
@@ -183,7 +198,7 @@ public class EnergyNetwork
     /**
      * Checks every block in the network and returns whether it has changed
      */
-    public boolean checkNetwork(World world)
+    public boolean checkNetwork()
     {
         boolean changed = false;
 
@@ -194,7 +209,7 @@ public class EnergyNetwork
             if(!CommonUtils.isCable(world, pos) || !isComponentInNetwork(pos))
             {
                 //Split up networks if break in this network
-                NetworkHandler.onCableRemoved(world, pos);
+                NetworkData.onCableRemoved(world, pos);
                 changed = true;
                 iterator.remove();
             }
@@ -259,7 +274,7 @@ public class EnergyNetwork
         return inputs.remove(pos) || outputs.remove(pos);
     }
 
-    public List<BlockPos> getCables()
+    public Set<BlockPos> getCables()
     {
         return cables;
     }
@@ -271,7 +286,7 @@ public class EnergyNetwork
 
     public void addCable(BlockPos pos)
     {
-        if(!cables.contains(pos)) cables.add(pos);
+        cables.add(pos);
     }
 
     public void removeCable(BlockPos pos)
@@ -279,7 +294,7 @@ public class EnergyNetwork
         cables.remove(pos);
     }
 
-    public List<BlockPos> getInputs()
+    public Set<BlockPos> getInputs()
     {
         return inputs;
     }
@@ -292,7 +307,7 @@ public class EnergyNetwork
     public void addInput(BlockPos pos)
     {
         Sparkz.logger.info("Adding {} as input to network {}", pos, this);
-        if(!inputs.contains(pos)) inputs.add(pos);
+        inputs.add(pos);
     }
 
     public void removeInput(BlockPos pos)
@@ -300,7 +315,7 @@ public class EnergyNetwork
         inputs.remove(pos);
     }
 
-    public List<BlockPos> getOutputs()
+    public Set<BlockPos> getOutputs()
     {
         return outputs;
     }
@@ -313,7 +328,7 @@ public class EnergyNetwork
     public void addOutput(BlockPos pos)
     {
         Sparkz.logger.info("Adding {} as output to network {}", pos, this);
-        if(!outputs.contains(pos)) outputs.add(pos);
+        outputs.add(pos);
     }
 
     public void removeOutput(BlockPos pos)
@@ -321,9 +336,65 @@ public class EnergyNetwork
         outputs.remove(pos);
     }
 
+    public UUID getUuid()
+    {
+        return uuid;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        return obj instanceof EnergyNetwork && uuid.equals(((EnergyNetwork) obj).uuid);
+    }
+
     @Override
     public String toString()
     {
-        return Integer.toHexString(hashCode());
+        return uuid.toString();
+    }
+
+    @Override
+    public NBTTagCompound serializeNBT()
+    {
+        NBTTagCompound nbt = new NBTTagCompound();
+
+        nbt.setUniqueId("uuid", uuid);
+        nbt.setInteger("dimension", world.provider.getDimension());
+
+        NBTTagList list = new NBTTagList();
+        for(BlockPos pos : cables)
+            list.appendTag(new NBTTagLong(pos.toLong()));
+        nbt.setTag("cableList", list);
+
+        list = new NBTTagList();
+        for(BlockPos pos : inputs)
+            list.appendTag(new NBTTagLong(pos.toLong()));
+        nbt.setTag("inputList", list);
+
+        list = new NBTTagList();
+        for(BlockPos pos : outputs)
+            list.appendTag(new NBTTagLong(pos.toLong()));
+        nbt.setTag("outputList", list);
+
+        return nbt;
+    }
+
+    @Override
+    public void deserializeNBT(NBTTagCompound nbt)
+    {
+        uuid = nbt.getUniqueId("uuid");
+        world = FMLCommonHandler.instance().getMinecraftServerInstance().getWorld(nbt.getInteger("dimension"));
+
+        cables.clear();
+        NBTTagList list = nbt.getTagList("cableList", Constants.NBT.TAG_LONG);
+        list.forEach(tag -> cables.add(BlockPos.fromLong(((NBTTagLong) tag).getLong())));
+
+        inputs.clear();
+        list = nbt.getTagList("inputList", Constants.NBT.TAG_LONG);
+        list.forEach(tag -> inputs.add(BlockPos.fromLong(((NBTTagLong) tag).getLong())));
+
+        outputs.clear();
+        list = nbt.getTagList("outputList", Constants.NBT.TAG_LONG);
+        list.forEach(tag -> outputs.add(BlockPos.fromLong(((NBTTagLong) tag).getLong())));
     }
 }

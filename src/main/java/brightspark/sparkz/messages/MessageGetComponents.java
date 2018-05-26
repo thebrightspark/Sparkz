@@ -9,16 +9,16 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class MessageGetComponents implements IMessage
 {
-    public List<BlockPos> cables, inputs, outputs;
+    public Set<BlockPos> cables, inputs, outputs;
 
     public MessageGetComponents() {}
 
-    public MessageGetComponents(List<BlockPos> cables, List<BlockPos> inputs, List<BlockPos> outputs)
+    public MessageGetComponents(Set<BlockPos> cables, Set<BlockPos> inputs, Set<BlockPos> outputs)
     {
         this.cables = cables;
         this.inputs = inputs;
@@ -31,13 +31,13 @@ public class MessageGetComponents implements IMessage
         int cablesSize = buf.readInt();
         int inputsSize = buf.readInt();
         int outputsSize = buf.readInt();
-        cables = new ArrayList<>(cablesSize);
+        cables = new HashSet<>(cablesSize);
         for(int i = 0; i < cablesSize; i++)
             cables.add(BlockPos.fromLong(buf.readLong()));
-        inputs = new ArrayList<>(inputsSize);
+        inputs = new HashSet<>(inputsSize);
         for(int i = 0; i < inputsSize; i++)
             inputs.add(BlockPos.fromLong(buf.readLong()));
-        outputs = new ArrayList<>(outputsSize);
+        outputs = new HashSet<>(outputsSize);
         for(int i = 0; i < outputsSize; i++)
             outputs.add(BlockPos.fromLong(buf.readLong()));
     }

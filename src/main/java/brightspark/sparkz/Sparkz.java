@@ -1,13 +1,10 @@
 package brightspark.sparkz;
 
-import brightspark.sparkz.init.SBlocks;
-import brightspark.sparkz.init.SItems;
 import brightspark.sparkz.messages.MessageGetComponents;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
@@ -42,12 +39,5 @@ public class Sparkz
         logger = event.getModLog();
         network = NetworkRegistry.INSTANCE.newSimpleChannel(MOD_ID);
         network.registerMessage(MessageGetComponents.Handler.class, MessageGetComponents.class, 0, Side.CLIENT);
-    }
-
-    @Mod.EventHandler
-    public void postInit(FMLPostInitializationEvent event)
-    {
-        SItems.uninitLists();
-        SBlocks.uninitLists();
     }
 }
