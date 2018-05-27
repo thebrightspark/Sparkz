@@ -23,8 +23,8 @@ import java.util.Set;
 public class ItemDebug extends Item
 {
     public Set<BlockPos> cablesToHighlight = null;
-    public Set<BlockPos> inputsToHighlight = null;
-    public Set<BlockPos> outputsToHighlight = null;
+    public Set<BlockPos> consumersToHighlight = null;
+    public Set<BlockPos> producersToHighlight = null;
 
     public ItemDebug()
     {
@@ -41,8 +41,8 @@ public class ItemDebug extends Item
             if(world.isRemote)
             {
                 cablesToHighlight = null;
-                inputsToHighlight = null;
-                outputsToHighlight = null;
+                consumersToHighlight = null;
+                producersToHighlight = null;
                 player.sendMessage(new TextComponentString("Cleared saved network"));
             }
             return new ActionResult<>(EnumActionResult.SUCCESS, player.getHeldItem(hand));
@@ -72,7 +72,7 @@ public class ItemDebug extends Item
                 player.sendMessage(new TextComponentString(
                         "Cable at " + pos +
                                 "\nPart of network: " + network +
-                                "\nNetwork has " + network.getNumCables() + " cables, " + network.getNumConsumers() + " inputs and " + network.getNumProducers() + " outputs"));
+                                "\nNetwork has " + network.getNumCables() + " cables, " + network.getNumConsumers() + " consumers and " + network.getNumProducers() + " producers"));
             }
             else
             {

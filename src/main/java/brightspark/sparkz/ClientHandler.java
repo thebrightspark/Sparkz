@@ -21,8 +21,8 @@ public class ClientHandler
 {
     private static Minecraft mc = Minecraft.getMinecraft();
     private static Color cableColour = Color.WHITE;
-    private static Color inputColour = Color.BLUE;
-    private static Color outputColour = Color.ORANGE;
+    private static Color consumerColour = Color.BLUE;
+    private static Color producerColour = Color.ORANGE;
 
     private static void renderBox(BlockPos pos, double partialTicks, Color colour)
     {
@@ -62,14 +62,14 @@ public class ClientHandler
             for(BlockPos pos : cables)
                 renderBox(pos, event.getPartialTicks(), cableColour);
 
-        Set<BlockPos> inputs = SItems.debug.outputsToHighlight;
+        Set<BlockPos> inputs = SItems.debug.consumersToHighlight;
         if(inputs != null)
             for(BlockPos pos : inputs)
-                renderBox(pos, event.getPartialTicks(), inputColour);
+                renderBox(pos, event.getPartialTicks(), consumerColour);
 
-        Set<BlockPos> outputs = SItems.debug.inputsToHighlight;
+        Set<BlockPos> outputs = SItems.debug.producersToHighlight;
         if(outputs != null)
             for(BlockPos pos : outputs)
-                renderBox(pos, event.getPartialTicks(), outputColour);
+                renderBox(pos, event.getPartialTicks(), producerColour);
     }
 }

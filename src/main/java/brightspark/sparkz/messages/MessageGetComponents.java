@@ -14,15 +14,15 @@ import java.util.Set;
 
 public class MessageGetComponents implements IMessage
 {
-    public Set<BlockPos> cables, inputs, outputs;
+    public Set<BlockPos> cables, consumers, producers;
 
     public MessageGetComponents() {}
 
-    public MessageGetComponents(Set<BlockPos> cables, Set<BlockPos> inputs, Set<BlockPos> outputs)
+    public MessageGetComponents(Set<BlockPos> cables, Set<BlockPos> consumers, Set<BlockPos> producers)
     {
         this.cables = cables;
-        this.inputs = inputs;
-        this.outputs = outputs;
+        this.consumers = consumers;
+        this.producers = producers;
     }
 
     @Override
@@ -34,23 +34,23 @@ public class MessageGetComponents implements IMessage
         cables = new HashSet<>(cablesSize);
         for(int i = 0; i < cablesSize; i++)
             cables.add(BlockPos.fromLong(buf.readLong()));
-        inputs = new HashSet<>(inputsSize);
+        consumers = new HashSet<>(inputsSize);
         for(int i = 0; i < inputsSize; i++)
-            inputs.add(BlockPos.fromLong(buf.readLong()));
-        outputs = new HashSet<>(outputsSize);
+            consumers.add(BlockPos.fromLong(buf.readLong()));
+        producers = new HashSet<>(outputsSize);
         for(int i = 0; i < outputsSize; i++)
-            outputs.add(BlockPos.fromLong(buf.readLong()));
+            producers.add(BlockPos.fromLong(buf.readLong()));
     }
 
     @Override
     public void toBytes(ByteBuf buf)
     {
         buf.writeInt(cables.size());
-        buf.writeInt(inputs.size());
-        buf.writeInt(outputs.size());
+        buf.writeInt(consumers.size());
+        buf.writeInt(producers.size());
         cables.forEach((cable) -> buf.writeLong(cable.toLong()));
-        inputs.forEach((input) -> buf.writeLong(input.toLong()));
-        outputs.forEach((output) -> buf.writeLong(output.toLong()));
+        consumers.forEach((input) -> buf.writeLong(input.toLong()));
+        producers.forEach((output) -> buf.writeLong(output.toLong()));
     }
 
     public static class Handler implements IMessageHandler<MessageGetComponents, IMessage>
@@ -62,8 +62,8 @@ public class MessageGetComponents implements IMessage
             mainThread.addScheduledTask(() ->
             {
                 SItems.debug.cablesToHighlight = message.cables;
-                SItems.debug.inputsToHighlight = message.inputs;
-                SItems.debug.outputsToHighlight = message.outputs;
+                SItems.debug.consumersToHighlight = message.consumers;
+                SItems.debug.producersToHighlight = message.producers;
             });
             return null;
         }
