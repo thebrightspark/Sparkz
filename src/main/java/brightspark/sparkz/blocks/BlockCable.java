@@ -111,8 +111,8 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
             IEnergy energy = IEnergy.create(world, neighbour, null);
             if(energy != null)
             {
-                if(energy.canInput()) cableTE.getNetwork().addInput(neighbour);
-                if(energy.canOutput()) cableTE.getNetwork().addOutput(neighbour);
+                if(energy.canInput()) cableTE.getNetwork().addConsumer(neighbour);
+                if(energy.canOutput()) cableTE.getNetwork().addProducer(neighbour);
             }
         }
     }

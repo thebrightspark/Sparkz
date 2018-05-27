@@ -61,18 +61,18 @@ public class ItemDebug extends Item
             EnergyNetwork network = cable.getNetwork();
             if(network != null)
             {
-                Set<BlockPos> cables, inputs, outputs;
+                Set<BlockPos> cables, consumers, producers;
                 if(player.isSneaking())
                     cables = CommonUtils.getAllConnectedCables(world, pos);
                 else
                     cables = network.getCables();
-                inputs = network.getInputs();
-                outputs = network.getOutputs();
-                Sparkz.network.sendTo(new MessageGetComponents(cables, inputs, outputs), (EntityPlayerMP) player);
+                consumers = network.getConsumers();
+                producers = network.getProducers();
+                Sparkz.network.sendTo(new MessageGetComponents(cables, consumers, producers), (EntityPlayerMP) player);
                 player.sendMessage(new TextComponentString(
                         "Cable at " + pos +
                                 "\nPart of network: " + network +
-                                "\nNetwork has " + network.getNumCables() + " cables, " + network.getNumInputs() + " inputs and " + network.getNumOutputs() + " outputs"));
+                                "\nNetwork has " + network.getNumCables() + " cables, " + network.getNumConsumers() + " inputs and " + network.getNumProducers() + " outputs"));
             }
             else
             {

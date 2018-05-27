@@ -22,8 +22,8 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
     private UUID uuid = UUID.randomUUID();
     private World world;
     private Set<BlockPos> cables = new HashSet<>();
-    private Set<BlockPos> inputs = new HashSet<>();
-    private Set<BlockPos> outputs = new HashSet<>();
+    private Set<BlockPos> consumers = new HashSet<>();
+    private Set<BlockPos> producers = new HashSet<>();
 
     public EnergyNetwork(World world, BlockPos... cables)
     {
@@ -74,8 +74,8 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
         {
             otherNetwork.cables.forEach((pos) -> ((TileCable) world.getTileEntity(pos)).setNetwork(this));
             cables.addAll(otherNetwork.cables);
-            inputs.addAll(otherNetwork.inputs);
-            outputs.addAll(otherNetwork.outputs);
+            consumers.addAll(otherNetwork.consumers);
+            producers.addAll(otherNetwork.producers);
             NetworkData.removeNetwork(world, otherNetwork);
         }
     }
@@ -83,6 +83,7 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
     /**
      * Splits this network if the removed position causes a gap in this network
      * Returns the new networks as a result of the split
+     * TODO: Consumers and producers!
      */
     public void splitAt(BlockPos pos)
     {
@@ -110,39 +111,13 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
 
     public void update()
     {
-        //On EnergyNetwork update - transfer power from inputs to outputs
-        //Check how much is requested from outputs, and then distribute inputs to them evenly
+        //On EnergyNetwork update - transfer power from producers to consumers
+        //Check how much is requested from producers, and then distribute to consumers evenly
 
-        //Get outputs
-        List<IEnergy> outputEnergy = new ArrayList<>();
-        for(BlockPos pos : outputs)
-        {
-            TileEntity te = world.getTileEntity(pos);
-            if(te != null)
-            {
-                IEnergy energy = IEnergy.create(te, null);
-                if(energy != null)
-                    outputEnergy.add(energy);
-            }
-        }
-
-        //If nothing to output to, then just return
-        if(outputEnergy.isEmpty()) return;
-
-        //Sort outputs by max output
-        outputEnergy.sort(Comparator.comparingLong(IEnergy::getMaxOutput));
-
-        //Log
-        StringBuilder sb = new StringBuilder("Outputs: ");
-        for(IEnergy output : outputEnergy)
-            sb.append(output.getMaxOutput()).append(", ");
-        Sparkz.logger.info(sb.toString());
-
-        //Get inputs
-        long totalInputProvided = 0;
-
-        List<IEnergy> inputEnergy = new ArrayList<>();
-        for(BlockPos pos : inputs)
+        //Get producers
+        List<IEnergy> producerEnergy = new ArrayList<>();
+        long totalProducerEnergy = 0;
+        for(BlockPos pos : producers)
         {
             TileEntity te = world.getTileEntity(pos);
             if(te != null)
@@ -150,35 +125,56 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
                 IEnergy energy = IEnergy.create(te, null);
                 if(energy != null)
                 {
-                    inputEnergy.add(energy);
-                    totalInputProvided += energy.getMaxOutput();
+                    producerEnergy.add(energy);
+                    totalProducerEnergy += energy.getMaxOutput();
                 }
             }
         }
 
-        //Sort inputs by max input
-        inputEnergy.sort(Comparator.comparingLong(IEnergy::getMaxInput));
+        //If nothing to output to, then just return
+        if(producerEnergy.isEmpty()) return;
 
-        long inputProvided = totalInputProvided;
+        //Sort producers by max output
+        producerEnergy.sort(Comparator.comparingLong(IEnergy::getMaxOutput));
 
-        //Evenly distribute energy to outputs
-        for(IEnergy output : outputEnergy)
+        //Get consumers
+        List<IEnergy> consumerEnergy = new ArrayList<>();
+        for(BlockPos pos : consumers)
         {
-            long provided = inputProvided / outputEnergy.size();
-            long actuallyAccepted = output.inputEnergy(provided);
-            inputProvided -= actuallyAccepted;
+            if(producers.contains(pos)) continue;
+            TileEntity te = world.getTileEntity(pos);
+            if(te != null)
+            {
+                IEnergy energy = IEnergy.create(te, null);
+                if(energy != null)
+                    consumerEnergy.add(energy);
+            }
         }
 
-        //Get the amount actually provided to outputs
-        long inputUsed = totalInputProvided - inputProvided;
-        int inputsLeftToExtractFrom = inputEnergy.size();
+        //Sort consumers by max input
+        consumerEnergy.sort(Comparator.comparingLong(IEnergy::getMaxInput));
 
-        //Evenly draw energy from inputs
-        for(IEnergy input : inputEnergy)
+        long producerEnergyLeft = totalProducerEnergy;
+
+        //Evenly distribute energy to consumers
+        //TODO: Need to review distribution logic
+        for(IEnergy consumer : consumerEnergy)
         {
-            long taking = inputUsed / inputsLeftToExtractFrom;
-            long actuallyTaken = input.outputEnergy(taking);
-            inputUsed -= actuallyTaken;
+            long provided = producerEnergyLeft / consumerEnergy.size();
+            long actuallyAccepted = consumer.inputEnergy(provided);
+            producerEnergyLeft -= actuallyAccepted;
+        }
+
+        //Get the amount actually provided to consumers
+        long energyUsed = totalProducerEnergy - producerEnergyLeft;
+        int producersLeftToExtractFrom = producerEnergy.size();
+
+        //Evenly draw energy from producers
+        for(IEnergy producer : producerEnergy)
+        {
+            long taking = energyUsed / producersLeftToExtractFrom;
+            long actuallyTaken = producer.outputEnergy(taking);
+            energyUsed -= actuallyTaken;
         }
     }
 
@@ -215,7 +211,7 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
             }
         }
 
-        iterator = inputs.iterator();
+        iterator = consumers.iterator();
         while(iterator.hasNext())
         {
             BlockPos pos = iterator.next();
@@ -227,7 +223,7 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
             }
         }
 
-        iterator = outputs.iterator();
+        iterator = producers.iterator();
         while(iterator.hasNext())
         {
             BlockPos pos = iterator.next();
@@ -271,7 +267,7 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
 
     public boolean removeIO(BlockPos pos)
     {
-        return inputs.remove(pos) || outputs.remove(pos);
+        return consumers.remove(pos) || producers.remove(pos);
     }
 
     public Set<BlockPos> getCables()
@@ -294,46 +290,46 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
         cables.remove(pos);
     }
 
-    public Set<BlockPos> getInputs()
+    public Set<BlockPos> getConsumers()
     {
-        return inputs;
+        return consumers;
     }
 
-    public int getNumInputs()
+    public int getNumConsumers()
     {
-        return inputs.size();
+        return consumers.size();
     }
 
-    public void addInput(BlockPos pos)
+    public void addConsumer(BlockPos pos)
     {
-        Sparkz.logger.info("Adding {} as input to network {}", pos, this);
-        inputs.add(pos);
+        Sparkz.logger.info("Adding {} as consumer to network {}", pos, this);
+        consumers.add(pos);
     }
 
     public void removeInput(BlockPos pos)
     {
-        inputs.remove(pos);
+        consumers.remove(pos);
     }
 
-    public Set<BlockPos> getOutputs()
+    public Set<BlockPos> getProducers()
     {
-        return outputs;
+        return producers;
     }
 
-    public int getNumOutputs()
+    public int getNumProducers()
     {
-        return outputs.size();
+        return producers.size();
     }
 
-    public void addOutput(BlockPos pos)
+    public void addProducer(BlockPos pos)
     {
-        Sparkz.logger.info("Adding {} as output to network {}", pos, this);
-        outputs.add(pos);
+        Sparkz.logger.info("Adding {} as producer to network {}", pos, this);
+        producers.add(pos);
     }
 
     public void removeOutput(BlockPos pos)
     {
-        outputs.remove(pos);
+        producers.remove(pos);
     }
 
     public UUID getUuid()
@@ -367,14 +363,14 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
         nbt.setTag("cableList", list);
 
         list = new NBTTagList();
-        for(BlockPos pos : inputs)
+        for(BlockPos pos : consumers)
             list.appendTag(new NBTTagLong(pos.toLong()));
-        nbt.setTag("inputList", list);
+        nbt.setTag("consumerList", list);
 
         list = new NBTTagList();
-        for(BlockPos pos : outputs)
+        for(BlockPos pos : producers)
             list.appendTag(new NBTTagLong(pos.toLong()));
-        nbt.setTag("outputList", list);
+        nbt.setTag("producerList", list);
 
         return nbt;
     }
@@ -389,12 +385,12 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
         NBTTagList list = nbt.getTagList("cableList", Constants.NBT.TAG_LONG);
         list.forEach(tag -> cables.add(BlockPos.fromLong(((NBTTagLong) tag).getLong())));
 
-        inputs.clear();
-        list = nbt.getTagList("inputList", Constants.NBT.TAG_LONG);
-        list.forEach(tag -> inputs.add(BlockPos.fromLong(((NBTTagLong) tag).getLong())));
+        consumers.clear();
+        list = nbt.getTagList("consumerList", Constants.NBT.TAG_LONG);
+        list.forEach(tag -> consumers.add(BlockPos.fromLong(((NBTTagLong) tag).getLong())));
 
-        outputs.clear();
-        list = nbt.getTagList("outputList", Constants.NBT.TAG_LONG);
-        list.forEach(tag -> outputs.add(BlockPos.fromLong(((NBTTagLong) tag).getLong())));
+        producers.clear();
+        list = nbt.getTagList("producerList", Constants.NBT.TAG_LONG);
+        list.forEach(tag -> producers.add(BlockPos.fromLong(((NBTTagLong) tag).getLong())));
     }
 }

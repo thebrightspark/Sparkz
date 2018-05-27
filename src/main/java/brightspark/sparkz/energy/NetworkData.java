@@ -107,8 +107,8 @@ public class NetworkData extends WorldSavedData
                 IEnergy energy = IEnergy.create(world, neighbour, null);
                 if(energy != null)
                 {
-                    if(energy.canInput())   network.addInput(neighbour);
-                    if(energy.canOutput())  network.addOutput(neighbour);
+                    if(energy.canInput())   network.addConsumer(neighbour);
+                    if(energy.canOutput())  network.addProducer(neighbour);
                 }
             }
             return true;
@@ -132,9 +132,9 @@ public class NetworkData extends WorldSavedData
             if(energy == null)
                 return false;
             if(energy.canOutput())
-                network.addInput(componentPos);
+                network.addConsumer(componentPos);
             else if(energy.canInput())
-                network.addOutput(componentPos);
+                network.addProducer(componentPos);
         }
         return true;
     }
