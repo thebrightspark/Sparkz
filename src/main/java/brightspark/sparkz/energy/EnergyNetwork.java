@@ -114,6 +114,8 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
         //On EnergyNetwork update - transfer power from producers to consumers
         //Check how much is requested from producers, and then distribute to consumers evenly
 
+        //TODO: Treat blocks which are both a consumer and producer as excess storage?
+
         //Get producers
         List<IEnergy> producerEnergy = new ArrayList<>();
         long totalProducerEnergy = 0;

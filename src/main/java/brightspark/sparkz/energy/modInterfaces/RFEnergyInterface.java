@@ -4,15 +4,22 @@ import brightspark.sparkz.energy.IEnergy;
 import cofh.redstoneflux.api.IEnergyHandler;
 import cofh.redstoneflux.api.IEnergyProvider;
 import cofh.redstoneflux.api.IEnergyReceiver;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 
 public class RFEnergyInterface implements IEnergy
 {
     private IEnergyHandler energyHandler;
 
-    public RFEnergyInterface(IEnergyHandler energyHandler)
+    public RFEnergyInterface(TileEntity te)
     {
-        this.energyHandler = energyHandler;
+        energyHandler = te instanceof IEnergyHandler ? (IEnergyHandler) te : null;
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        return energyHandler != null;
     }
 
     @Override

@@ -3,20 +3,11 @@ package brightspark.sparkz.energy;
 import brightspark.sparkz.energy.modInterfaces.ForgeEnergyInterface;
 import brightspark.sparkz.energy.modInterfaces.RFEnergyInterface;
 import brightspark.sparkz.energy.modInterfaces.TeslaEnergyInterface;
-import brightspark.sparkz.util.ModIds;
-import cofh.redstoneflux.api.IEnergyHandler;
-import net.darkhax.tesla.api.ITeslaConsumer;
-import net.darkhax.tesla.api.ITeslaHolder;
-import net.darkhax.tesla.api.ITeslaProducer;
-import net.darkhax.tesla.capability.TeslaCapabilities;
+import brightspark.sparkz.util.OtherMods;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
-import net.minecraftforge.energy.CapabilityEnergy;
-import net.minecraftforge.energy.IEnergyStorage;
-import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.Optional;
 
 public interface IEnergy
 {
@@ -29,21 +20,21 @@ public interface IEnergy
     static IEnergy create(TileEntity te, EnumFacing side)
     {
         //Forge Energy
-        IEnergyStorage forgeEnergy = te.getCapability(CapabilityEnergy.ENERGY, side);
-        if(forgeEnergy != null) return new ForgeEnergyInterface(forgeEnergy);
+        IEnergy energy = new ForgeEnergyInterface(te, side);
+        if(energy.isValid()) return energy;
 
         //RF
-        if(Loader.isModLoaded(ModIds.RF))
+        if(OtherMods.isLoaded(OtherMods.RF))
         {
-            RFEnergyInterface rf = getRF(te);
-            if(rf != null) return rf;
+            energy = new RFEnergyInterface(te);
+            if(energy.isValid()) return energy;
         }
 
         //Tesla
-        if(Loader.isModLoaded(ModIds.TESLA))
+        if(OtherMods.isLoaded(OtherMods.TESLA))
         {
-            TeslaEnergyInterface tesla = getTesla(te, side);
-            if(tesla != null) return tesla;
+            energy = new TeslaEnergyInterface(te, side);
+            if(energy.isValid()) return energy;
         }
 
         //TODO: EU
@@ -55,26 +46,10 @@ public interface IEnergy
         return null;
     }
 
-    @Optional.Method(modid = ModIds.RF)
-    static RFEnergyInterface getRF(TileEntity te)
-    {
-        return te instanceof IEnergyHandler ? new RFEnergyInterface((IEnergyHandler) te) : null;
-    }
-
-    @Optional.Method(modid = ModIds.TESLA)
-    static TeslaEnergyInterface getTesla(TileEntity te, EnumFacing side)
-    {
-        TeslaEnergyInterface tesla = new TeslaEnergyInterface();
-
-        ITeslaHolder holder = te.getCapability(TeslaCapabilities.CAPABILITY_HOLDER, side);
-        if(holder != null) tesla.setHolder(holder);
-        ITeslaConsumer consumer = te.getCapability(TeslaCapabilities.CAPABILITY_CONSUMER, side);
-        if(consumer != null) tesla.setConsumer(consumer);
-        ITeslaProducer producer = te.getCapability(TeslaCapabilities.CAPABILITY_PRODUCER, side);
-        if(producer != null) tesla.setProducer(producer);
-
-        return tesla.hasIO() ? tesla : null;
-    }
+    /**
+     * Returns if the interface was created successfully
+     */
+    boolean isValid();
 
     /**
      * Returns if this can accept energy

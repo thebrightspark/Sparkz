@@ -4,6 +4,9 @@ import brightspark.sparkz.energy.IEnergy;
 import net.darkhax.tesla.api.ITeslaConsumer;
 import net.darkhax.tesla.api.ITeslaHolder;
 import net.darkhax.tesla.api.ITeslaProducer;
+import net.darkhax.tesla.capability.TeslaCapabilities;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 
 public class TeslaEnergyInterface implements IEnergy
 {
@@ -11,34 +14,22 @@ public class TeslaEnergyInterface implements IEnergy
     private ITeslaConsumer energyInput;
     private ITeslaProducer energyOutput;
 
-    public TeslaEnergyInterface() {}
-
-    public TeslaEnergyInterface setHolder(ITeslaHolder energyHolder)
+    public TeslaEnergyInterface(TileEntity te, EnumFacing side)
     {
-        this.energyHolder = energyHolder;
-        return this;
-    }
-
-    public TeslaEnergyInterface setConsumer(ITeslaConsumer energyConsumer)
-    {
-        energyInput = energyConsumer;
-        return this;
-    }
-
-    public TeslaEnergyInterface setProducer(ITeslaProducer energyProducer)
-    {
-        energyOutput = energyProducer;
-        return this;
-    }
-
-    public boolean hasIO()
-    {
-        return energyInput != null || energyOutput != null;
+        energyHolder = te.getCapability(TeslaCapabilities.CAPABILITY_HOLDER, side);
+        energyInput = te.getCapability(TeslaCapabilities.CAPABILITY_CONSUMER, side);
+        energyOutput = te.getCapability(TeslaCapabilities.CAPABILITY_PRODUCER, side);
     }
 
     private boolean hasStorage()
     {
         return energyHolder != null;
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        return energyInput != null || energyOutput != null;
     }
 
     @Override

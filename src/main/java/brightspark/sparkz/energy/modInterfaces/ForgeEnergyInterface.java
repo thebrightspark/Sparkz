@@ -1,15 +1,24 @@
 package brightspark.sparkz.energy.modInterfaces;
 
 import brightspark.sparkz.energy.IEnergy;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
+import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.energy.IEnergyStorage;
 
 public class ForgeEnergyInterface implements IEnergy
 {
     private IEnergyStorage energy;
     
-    public ForgeEnergyInterface(IEnergyStorage energy)
+    public ForgeEnergyInterface(TileEntity te, EnumFacing side)
     {
-        this.energy = energy;
+        energy = te.getCapability(CapabilityEnergy.ENERGY, side);
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        return energy != null;
     }
 
     @Override
