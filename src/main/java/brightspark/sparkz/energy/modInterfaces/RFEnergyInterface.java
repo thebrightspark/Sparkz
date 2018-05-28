@@ -1,5 +1,6 @@
 package brightspark.sparkz.energy.modInterfaces;
 
+import brightspark.sparkz.energy.EnergyType;
 import brightspark.sparkz.energy.IEnergy;
 import cofh.redstoneflux.api.IEnergyHandler;
 import cofh.redstoneflux.api.IEnergyProvider;
@@ -98,5 +99,11 @@ public class RFEnergyInterface implements IEnergy
     public long getMaxEnergyStored(EnumFacing side)
     {
         return energyHandler.getMaxEnergyStored(side);
+    }
+
+    @Override
+    public EnergyType getEnergyType()
+    {
+        return EnergyType.REDSTONE_FLUX;
     }
 }

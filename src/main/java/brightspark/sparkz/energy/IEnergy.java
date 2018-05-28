@@ -92,4 +92,17 @@ public interface IEnergy
      * Returns the max amount of energy this can store
      */
     long getMaxEnergyStored();
+
+    /**
+     * Returns the energy type
+     */
+    EnergyType getEnergyType();
+
+    /**
+     * Converts the energy stored to the given type
+     */
+    default long convertStoredTo(EnergyType type)
+    {
+        return getEnergyType().convertTo(getEnergyStored(), type);
+    }
 }

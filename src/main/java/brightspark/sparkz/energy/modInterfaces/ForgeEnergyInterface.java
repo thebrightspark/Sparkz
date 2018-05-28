@@ -1,5 +1,6 @@
 package brightspark.sparkz.energy.modInterfaces;
 
+import brightspark.sparkz.energy.EnergyType;
 import brightspark.sparkz.energy.IEnergy;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
@@ -67,5 +68,11 @@ public class ForgeEnergyInterface implements IEnergy
     public long getMaxEnergyStored()
     {
         return energy.getMaxEnergyStored();
+    }
+
+    @Override
+    public EnergyType getEnergyType()
+    {
+        return EnergyType.FORGE_ENERGY;
     }
 }

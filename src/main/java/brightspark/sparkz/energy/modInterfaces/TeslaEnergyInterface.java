@@ -1,5 +1,6 @@
 package brightspark.sparkz.energy.modInterfaces;
 
+import brightspark.sparkz.energy.EnergyType;
 import brightspark.sparkz.energy.IEnergy;
 import net.darkhax.tesla.api.ITeslaConsumer;
 import net.darkhax.tesla.api.ITeslaHolder;
@@ -78,5 +79,11 @@ public class TeslaEnergyInterface implements IEnergy
     public long getMaxEnergyStored()
     {
         return hasStorage() ? energyHolder.getCapacity() : 0L;
+    }
+
+    @Override
+    public EnergyType getEnergyType()
+    {
+        return EnergyType.TESLA;
     }
 }
