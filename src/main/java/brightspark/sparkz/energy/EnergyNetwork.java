@@ -136,11 +136,11 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
             TileEntity te = world.getTileEntity(pos);
             if(te != null)
             {
-                IEnergy energy = IEnergy.create(te, null);
-                if(energy != null)
+                EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+                if(sideWithCable != null)
                 {
-                    EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
-                    if(sideWithCable != null)
+                    IEnergy energy = IEnergy.create(te, null);
+                    if(energy != null && energy.canOutput(sideWithCable))
                     {
                         producerEnergy.add(new EnergyBlock(energy, pos, sideWithCable));
                         totalProducerEnergy += energy.getMaxOutputType(sideWithCable, EnergyType.FORGE_ENERGY);
@@ -161,11 +161,11 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
             TileEntity te = world.getTileEntity(pos);
             if(te != null)
             {
-                IEnergy energy = IEnergy.create(te, null);
-                if(energy != null)
+                EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+                if(sideWithCable != null)
                 {
-                    EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
-                    if(sideWithCable != null)
+                    IEnergy energy = IEnergy.create(te, null);
+                    if(energy != null && energy.canInput(sideWithCable))
                         consumerEnergy.add(new EnergyBlock(energy, pos, sideWithCable));
                 }
             }
@@ -189,11 +189,11 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
             TileEntity te = world.getTileEntity(pos);
             if(te != null)
             {
-                IEnergy energy = IEnergy.create(te, null);
-                if(energy != null)
+                EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+                if(sideWithCable != null)
                 {
-                    EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
-                    if(sideWithCable != null)
+                    IEnergy energy = IEnergy.create(te, null);
+                    if(energy != null && energy.canOutput(sideWithCable))
                     {
                         Pair<InternalEnergy, List<EnergyBlock>> type = producerEnergy.computeIfAbsent(energy.getEnergyType(),
                                 energyType -> new Pair<>(new InternalEnergy(), new LinkedList<>()));
@@ -216,11 +216,11 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
             TileEntity te = world.getTileEntity(pos);
             if(te != null)
             {
-                IEnergy energy = IEnergy.create(te, null);
-                if(energy != null)
+                EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+                if(sideWithCable != null)
                 {
-                    EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
-                    if(sideWithCable != null)
+                    IEnergy energy = IEnergy.create(te, null);
+                    if(energy != null && energy.canInput(sideWithCable))
                     {
                         List<EnergyBlock> typeConsumers = consumerEnergy.computeIfAbsent(energy.getEnergyType(), k -> new LinkedList<>());
                         typeConsumers.add(new EnergyBlock(energy, pos, sideWithCable));
@@ -315,6 +315,7 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
 
     /**
      * Checks every block in the network and returns whether it has changed
+     * TODO: Need to try call this at times to ensure network is still fine (or maybe a lighter-weight method?)
      */
     public boolean checkNetwork()
     {
