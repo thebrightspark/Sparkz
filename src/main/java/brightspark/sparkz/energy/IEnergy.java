@@ -19,9 +19,7 @@ public interface IEnergy
 
     static IEnergy create(TileEntity te, EnumFacing side)
     {
-        //Forge Energy
-        IEnergy energy = new ForgeEnergyInterface(te, side);
-        if(energy.isValid()) return energy;
+        IEnergy energy;
 
         //RF
         if(OtherMods.isLoaded(OtherMods.RF))
@@ -43,6 +41,10 @@ public interface IEnergy
 
         //TODO: Galacticraft Energy
 
+        //Forge Energy
+        energy = new ForgeEnergyInterface(te, side);
+        if(energy.isValid()) return energy;
+
         return null;
     }
 
@@ -54,39 +56,55 @@ public interface IEnergy
     /**
      * Returns if this can accept energy
      */
-    boolean canInput();
+    boolean canInput(EnumFacing side);
 
     /**
      * Returns if this can provide energy
      */
-    boolean canOutput();
+    boolean canOutput(EnumFacing side);
 
     /**
      * Returns the max amount this can accept
      */
-    long getMaxInput();
+    long getMaxInput(EnumFacing side);
 
     /**
      * Returns the max amount this can provide
      */
-    long getMaxOutput();
+    long getMaxOutput(EnumFacing side);
+
+    /**
+     * Returns the max output this can provide in the given energy type
+     */
+    default double getMaxOutputType(EnumFacing side, EnergyType type)
+    {
+        return getEnergyType().convertTo(getMaxOutput(side), type);
+    }
 
     /**
      * Gives energy to this
      * @return The amount of energy this actually accepted
      */
-    long inputEnergy(long amount);
+    long inputEnergy(EnumFacing side, long amount);
 
     /**
      * Takes energy from this
      * @return The amount of energy this actually provided
      */
-    long outputEnergy(long maxAmount);
+    long outputEnergy(EnumFacing side, long maxAmount);
 
     /**
      * Returns the amount of energy stored
      */
     long getEnergyStored();
+
+    /**
+     * Returns the amount of energy stored in the given energy type
+     */
+    default double getEnergyStored(EnergyType type)
+    {
+        return getEnergyType().convertTo(getEnergyStored(), type);
+    }
 
     /**
      * Returns the max amount of energy this can store
@@ -97,12 +115,4 @@ public interface IEnergy
      * Returns the energy type
      */
     EnergyType getEnergyType();
-
-    /**
-     * Converts the energy stored to the given type
-     */
-    default long convertStoredTo(EnergyType type)
-    {
-        return getEnergyType().convertTo(getEnergyStored(), type);
-    }
 }

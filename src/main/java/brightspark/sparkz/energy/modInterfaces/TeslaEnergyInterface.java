@@ -34,39 +34,39 @@ public class TeslaEnergyInterface implements IEnergy
     }
 
     @Override
-    public boolean canInput()
+    public boolean canInput(EnumFacing side)
     {
         return energyInput != null;
     }
 
     @Override
-    public boolean canOutput()
+    public boolean canOutput(EnumFacing side)
     {
         return energyOutput != null;
     }
 
     @Override
-    public long getMaxInput()
+    public long getMaxInput(EnumFacing side)
     {
-        return canInput() ? energyInput.givePower(Long.MAX_VALUE, true) : 0L;
+        return canInput(side) ? energyInput.givePower(Long.MAX_VALUE, true) : 0L;
     }
 
     @Override
-    public long getMaxOutput()
+    public long getMaxOutput(EnumFacing side)
     {
-        return canOutput() ? energyOutput.takePower(Long.MAX_VALUE, true) : 0L;
+        return canOutput(side) ? energyOutput.takePower(Long.MAX_VALUE, true) : 0L;
     }
 
     @Override
-    public long inputEnergy(long amount)
+    public long inputEnergy(EnumFacing side, long amount)
     {
-        return canInput() ? energyInput.givePower(amount, false) : 0L;
+        return canInput(side) ? energyInput.givePower(amount, false) : 0L;
     }
 
     @Override
-    public long outputEnergy(long maxAmount)
+    public long outputEnergy(EnumFacing side, long maxAmount)
     {
-        return canOutput() ? energyOutput.takePower(maxAmount, false) : 0L;
+        return canOutput(side) ? energyOutput.takePower(maxAmount, false) : 0L;
     }
 
     @Override

@@ -24,70 +24,45 @@ public class RFEnergyInterface implements IEnergy
     }
 
     @Override
-    public boolean canInput()
+    public boolean canInput(EnumFacing side)
     {
-        return energyHandler instanceof IEnergyReceiver;
+        return energyHandler instanceof IEnergyReceiver && ((IEnergyReceiver) energyHandler).receiveEnergy(side, 1, true) == 1;
     }
 
     @Override
-    public boolean canOutput()
+    public boolean canOutput(EnumFacing side)
     {
-        return energyHandler instanceof IEnergyProvider;
+        return energyHandler instanceof IEnergyProvider && ((IEnergyProvider) energyHandler).extractEnergy(side, 1, true) == 1;
     }
 
     @Override
-    public long getMaxInput()
-    {
-        return getMaxInput(null);
-    }
-
     public long getMaxInput(EnumFacing side)
     {
-        return canInput() ? ((IEnergyReceiver) energyHandler).receiveEnergy(side, Integer.MAX_VALUE, true) : 0;
+        return canInput(side) ? ((IEnergyReceiver) energyHandler).receiveEnergy(side, Integer.MAX_VALUE, true) : 0;
     }
 
     @Override
-    public long getMaxOutput()
-    {
-        return getMaxOutput(null);
-    }
-
     public long getMaxOutput(EnumFacing side)
     {
-        return canOutput() ? ((IEnergyProvider) energyHandler).extractEnergy(side, Integer.MAX_VALUE, true) : 0;
+        return canOutput(side) ? ((IEnergyProvider) energyHandler).extractEnergy(side, Integer.MAX_VALUE, true) : 0;
     }
 
     @Override
-    public long inputEnergy(long amount)
+    public long inputEnergy(EnumFacing side, long amount)
     {
-        return inputEnergy((int) amount, null);
-    }
-
-    public int inputEnergy(int amount, EnumFacing side)
-    {
-        return canInput() ? ((IEnergyReceiver) energyHandler).receiveEnergy(side, amount, false) : 0;
+        return canInput(side) ? ((IEnergyReceiver) energyHandler).receiveEnergy(side, (int) amount, false) : 0;
     }
 
     @Override
-    public long outputEnergy(long maxAmount)
+    public long outputEnergy(EnumFacing side, long maxAmount)
     {
-        return outputEnergy((int) maxAmount, null);
-    }
-
-    public int outputEnergy(int maxAmount, EnumFacing side)
-    {
-        return canOutput() ? ((IEnergyProvider) energyHandler).extractEnergy(side, maxAmount, false) : 0;
+        return canOutput(side) ? ((IEnergyProvider) energyHandler).extractEnergy(side, (int) maxAmount, false) : 0;
     }
 
     @Override
     public long getEnergyStored()
     {
-        return getEnergyStored(null);
-    }
-
-    public long getEnergyStored(EnumFacing side)
-    {
-        return energyHandler.getEnergyStored(side);
+        return energyHandler.getEnergyStored(null);
     }
 
     @Override

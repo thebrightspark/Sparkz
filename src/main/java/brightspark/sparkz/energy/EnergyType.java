@@ -4,6 +4,7 @@ import static brightspark.sparkz.SparkzConfig.ENERGY_CONVERSION;
 
 public enum EnergyType
 {
+    INTERNAL_ENERGY(1D),
     FORGE_ENERGY(ENERGY_CONVERSION.forge_energy),
     REDSTONE_FLUX(ENERGY_CONVERSION.redstone_flux),
     TESLA(ENERGY_CONVERSION.tesla),
@@ -19,8 +20,13 @@ public enum EnergyType
         this.ratio = ratio;
     }
 
-    public long convertTo(long amount, EnergyType otherType)
+    public double convertTo(long amount, EnergyType otherType)
     {
-        return ratio == otherType.ratio ? amount : (long) (((double) amount / ratio) * otherType.ratio);
+        return convertTo((double) amount, otherType);
+    }
+
+    public double convertTo(double amount, EnergyType otherType)
+    {
+        return ratio == otherType.ratio ? amount : ((amount / ratio) * otherType.ratio);
     }
 }

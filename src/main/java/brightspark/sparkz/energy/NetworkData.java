@@ -107,8 +107,9 @@ public class NetworkData extends WorldSavedData
                 IEnergy energy = IEnergy.create(world, neighbour, null);
                 if(energy != null)
                 {
-                    if(energy.canInput())   network.addConsumer(neighbour);
-                    if(energy.canOutput())  network.addProducer(neighbour);
+                    EnumFacing sideOpposite = side.getOpposite();
+                    if(energy.canInput(sideOpposite))   network.addConsumer(neighbour);
+                    if(energy.canOutput(sideOpposite))  network.addProducer(neighbour);
                 }
             }
             return true;
@@ -131,9 +132,10 @@ public class NetworkData extends WorldSavedData
             IEnergy energy = IEnergy.create(te, null);
             if(energy == null)
                 return false;
-            if(energy.canOutput())
+            EnumFacing side = CommonUtils.getSideWithCable(world, componentPos, network);
+            if(energy.canOutput(side))
                 network.addConsumer(componentPos);
-            else if(energy.canInput())
+            else if(energy.canInput(side))
                 network.addProducer(componentPos);
         }
         return true;

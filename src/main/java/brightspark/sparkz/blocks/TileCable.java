@@ -4,6 +4,7 @@ import brightspark.sparkz.Sparkz;
 import brightspark.sparkz.energy.EnergyNetwork;
 import brightspark.sparkz.energy.IEnergy;
 import brightspark.sparkz.energy.NetworkData;
+import brightspark.sparkz.util.CommonUtils;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
@@ -52,23 +53,21 @@ public class TileCable extends TileEntity
      */
     public void determineSideIO(IBlockAccess world, BlockPos neighbourPos)
     {
-        int vecX = Integer.compare(neighbourPos.getX(), pos.getX());
-        int vecY = Integer.compare(neighbourPos.getY(), pos.getY());
-        int vecZ = Integer.compare(neighbourPos.getZ(), pos.getZ());
-        EnumFacing side = EnumFacing.getFacingFromVector(vecX, vecY, vecZ);
+        EnumFacing side = CommonUtils.getSide(pos, neighbourPos);
 
         if(world.isAirBlock(neighbourPos))
         {
             setSideIO(side, ECableIO.NONE);
             return;
         }
-        IEnergy neighbourEnergy = IEnergy.create(world, neighbourPos, side.getOpposite());
+        EnumFacing sideOpposite = side.getOpposite();
+        IEnergy neighbourEnergy = IEnergy.create(world, neighbourPos, sideOpposite);
         ECableIO io = ECableIO.NONE;
         if(neighbourEnergy != null)
         {
-            if(neighbourEnergy.canOutput())
+            if(neighbourEnergy.canOutput(sideOpposite))
                 io = ECableIO.INPUT;
-            else if(neighbourEnergy.canInput())
+            else if(neighbourEnergy.canInput(sideOpposite))
                 io = ECableIO.OUTPUT;
         }
         setSideIO(side, io);

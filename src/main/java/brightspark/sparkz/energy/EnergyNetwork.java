@@ -1,8 +1,10 @@
 package brightspark.sparkz.energy;
 
 import brightspark.sparkz.Sparkz;
+import brightspark.sparkz.SparkzConfig;
 import brightspark.sparkz.blocks.TileCable;
 import brightspark.sparkz.util.CommonUtils;
+import brightspark.sparkz.util.Pair;
 import com.google.common.collect.Iterables;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -112,13 +114,23 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
     public void update()
     {
         //On EnergyNetwork update - transfer power from producers to consumers
-        //Check how much is requested from producers, and then distribute to consumers evenly
-
         //TODO: Treat blocks which are both a consumer and producer as excess storage?
+        //TODO: Need to review distribution logic
 
+        if(SparkzConfig.mergeEnergy)
+            transferEnergyMerged();
+        else
+            transferEnergySeparate();
+    }
+
+    /**
+     * Merge energy - Convert energy from producers to FE, then convert to what consumers need
+     */
+    private void transferEnergyMerged()
+    {
         //Get producers
-        List<IEnergy> producerEnergy = new ArrayList<>();
-        long totalProducerEnergy = 0;
+        List<EnergyBlock> producerEnergy = new LinkedList<>();
+        double totalProducerEnergy = 0D;
         for(BlockPos pos : producers)
         {
             TileEntity te = world.getTileEntity(pos);
@@ -127,20 +139,22 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
                 IEnergy energy = IEnergy.create(te, null);
                 if(energy != null)
                 {
-                    producerEnergy.add(energy);
-                    totalProducerEnergy += energy.getMaxOutput();
+                    EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+                    if(sideWithCable != null)
+                    {
+                        producerEnergy.add(new EnergyBlock(energy, pos, sideWithCable));
+                        totalProducerEnergy += energy.getMaxOutputType(sideWithCable, EnergyType.FORGE_ENERGY);
+                    }
                 }
             }
         }
-
         //If nothing to output to, then just return
         if(producerEnergy.isEmpty()) return;
-
         //Sort producers by max output
-        producerEnergy.sort(Comparator.comparingLong(IEnergy::getMaxOutput));
+        producerEnergy.sort(Comparator.comparingLong(e -> e.energy.getMaxOutput(e.side)));
 
         //Get consumers
-        List<IEnergy> consumerEnergy = new ArrayList<>();
+        List<EnergyBlock> consumerEnergy = new LinkedList<>();
         for(BlockPos pos : consumers)
         {
             if(producers.contains(pos)) continue;
@@ -149,33 +163,139 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
             {
                 IEnergy energy = IEnergy.create(te, null);
                 if(energy != null)
-                    consumerEnergy.add(energy);
+                {
+                    EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+                    if(sideWithCable != null)
+                        consumerEnergy.add(new EnergyBlock(energy, pos, sideWithCable));
+                }
+            }
+        }
+        //Sort consumers by max input
+        consumerEnergy.sort(Comparator.comparingLong(e -> e.energy.getMaxInput(e.side)));
+
+        //Transfer energy
+        distributeEnergy(producerEnergy, totalProducerEnergy, consumerEnergy);
+    }
+
+    /**
+     * Don't merge energy - Only send energy from producers to consumers of the same energy type
+     */
+    private void transferEnergySeparate()
+    {
+        //Get producers
+        Map<EnergyType, Pair<InternalEnergy, List<EnergyBlock>>> producerEnergy = new HashMap<>();
+        for(BlockPos pos : producers)
+        {
+            TileEntity te = world.getTileEntity(pos);
+            if(te != null)
+            {
+                IEnergy energy = IEnergy.create(te, null);
+                if(energy != null)
+                {
+                    EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+                    if(sideWithCable != null)
+                    {
+                        Pair<InternalEnergy, List<EnergyBlock>> type = producerEnergy.computeIfAbsent(energy.getEnergyType(),
+                                energyType -> new Pair<>(new InternalEnergy(), new LinkedList<>()));
+                        type.key.addMaxOutput(energy, sideWithCable);
+                        type.value.add(new EnergyBlock(energy, pos, sideWithCable));
+                    }
+                }
+            }
+        }
+        //If nothing to output to, then just return
+        if(producerEnergy.isEmpty()) return;
+        //Sort producers by max output
+        producerEnergy.values().forEach(type -> type.value.sort(Comparator.comparingLong(e -> e.energy.getMaxOutput(e.side))));
+
+        //Get consumers
+        Map<EnergyType, List<EnergyBlock>> consumerEnergy = new HashMap<>();
+        for(BlockPos pos : consumers)
+        {
+            if(producers.contains(pos)) continue;
+            TileEntity te = world.getTileEntity(pos);
+            if(te != null)
+            {
+                IEnergy energy = IEnergy.create(te, null);
+                if(energy != null)
+                {
+                    EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+                    if(sideWithCable != null)
+                    {
+                        List<EnergyBlock> typeConsumers = consumerEnergy.computeIfAbsent(energy.getEnergyType(), k -> new LinkedList<>());
+                        typeConsumers.add(new EnergyBlock(energy, pos, sideWithCable));
+                    }
+                }
             }
         }
 
-        //Sort consumers by max input
-        consumerEnergy.sort(Comparator.comparingLong(IEnergy::getMaxInput));
+        //Transfer energy per type
+        for(Map.Entry<EnergyType, List<EnergyBlock>> consumersByType : consumerEnergy.entrySet())
+        {
+            EnergyType type = consumersByType.getKey();
+            List<EnergyBlock> typeConsumers = consumersByType.getValue();
+            Pair<InternalEnergy, List<EnergyBlock>> producersPair = producerEnergy.get(type);
 
-        long producerEnergyLeft = totalProducerEnergy;
+            //Sort consumers by max input
+            typeConsumers.sort(Comparator.comparingLong(e -> e.energy.getMaxInput(e.side)));
+            //Distribute energy
+            distributeEnergy(producersPair.value, producersPair.key.convertTo(type), typeConsumers);
+        }
+    }
+
+    /**
+     * Distributes energy from producers to consumers of the same energy type
+     */
+    private static void distributeEnergy(List<EnergyBlock> producersEnergy, long producersTotal, List<EnergyBlock> consumersEnergy)
+    {
+        long producerEnergyLeft = producersTotal;
 
         //Evenly distribute energy to consumers
-        //TODO: Need to review distribution logic
-        for(IEnergy consumer : consumerEnergy)
+        for(EnergyBlock consumer : consumersEnergy)
         {
-            long provided = producerEnergyLeft / consumerEnergy.size();
-            long actuallyAccepted = consumer.inputEnergy(provided);
+            long provided = producerEnergyLeft / consumersEnergy.size();
+            long actuallyAccepted = consumer.energy.inputEnergy(consumer.side, provided);
             producerEnergyLeft -= actuallyAccepted;
         }
 
         //Get the amount actually provided to consumers
-        long energyUsed = totalProducerEnergy - producerEnergyLeft;
-        int producersLeftToExtractFrom = producerEnergy.size();
+        long energyUsed = producersTotal - producerEnergyLeft;
+        int producersLeftToExtractFrom = producersEnergy.size();
 
         //Evenly draw energy from producers
-        for(IEnergy producer : producerEnergy)
+        for(EnergyBlock producer : producersEnergy)
         {
             long taking = energyUsed / producersLeftToExtractFrom;
-            long actuallyTaken = producer.outputEnergy(taking);
+            long actuallyTaken = producer.energy.outputEnergy(producer.side, taking);
+            energyUsed -= actuallyTaken;
+        }
+    }
+
+    /**
+     * Distributes energy from producers to consumers of any energy type
+     */
+    private static void distributeEnergy(List<EnergyBlock> producersEnergy, double producersTotal, List<EnergyBlock> consumersEnergy)
+    {
+        double producerEnergyLeft = producersTotal;
+
+        //Evenly distribute energy to consumers
+        for(EnergyBlock consumer : consumersEnergy)
+        {
+            long provided = (long) (producerEnergyLeft / (double) consumersEnergy.size());
+            long actuallyAccepted = consumer.energy.inputEnergy(consumer.side,
+                    (long) EnergyType.INTERNAL_ENERGY.convertTo(provided, consumer.energy.getEnergyType()));
+            producerEnergyLeft -= actuallyAccepted;
+        }
+
+        //Get the amount actually provided to consumers
+        double energyUsed = producersTotal - producerEnergyLeft;
+        int producersLeftToExtractFrom = producersEnergy.size();
+
+        //Evenly draw energy from producers
+        for(EnergyBlock producer : producersEnergy)
+        {
+            long taking = (long) (energyUsed / (double) producersLeftToExtractFrom);
+            long actuallyTaken = producer.energy.outputEnergy(producer.side, taking);
             energyUsed -= actuallyTaken;
         }
     }
@@ -211,6 +331,19 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
                 changed = true;
                 iterator.remove();
             }
+            else
+            {
+                //Check for consumers/producers around cable
+                for(EnumFacing side : EnumFacing.VALUES)
+                {
+                    BlockPos sidePos = pos.offset(side);
+                    EnumFacing opposite = side.getOpposite();
+                    IEnergy energy = IEnergy.create(world, sidePos, opposite);
+                    if(energy == null) continue;
+                    if(energy.canInput(opposite))   addConsumer(sidePos);
+                    if(energy.canOutput(opposite))  addProducer(sidePos);
+                }
+            }
         }
 
         iterator = consumers.iterator();
@@ -218,10 +351,16 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
         {
             BlockPos pos = iterator.next();
             IEnergy energy = IEnergy.create(world, pos, null);
-            if(energy == null || !energy.canInput() || !isComponentInNetwork(pos))
+            EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+            if(energy == null || sideWithCable == null || !isComponentInNetwork(pos) || !energy.canInput(sideWithCable))
             {
                 changed = true;
                 iterator.remove();
+            }
+            else if(energy.canOutput(sideWithCable))
+            {
+                changed = true;
+                addProducer(pos);
             }
         }
 
@@ -230,10 +369,16 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
         {
             BlockPos pos = iterator.next();
             IEnergy energy = IEnergy.create(world, pos, null);
-            if(energy == null || !energy.canOutput() || !isComponentInNetwork(pos))
+            EnumFacing sideWithCable = CommonUtils.getSideWithCable(world, pos, this);
+            if(energy == null || sideWithCable == null || !isComponentInNetwork(pos) || !energy.canOutput(sideWithCable))
             {
                 changed = true;
                 iterator.remove();
+            }
+            else if(energy.canInput(sideWithCable))
+            {
+                changed = true;
+                addConsumer(pos);
             }
         }
 
@@ -269,7 +414,7 @@ public class EnergyNetwork implements INBTSerializable<NBTTagCompound>
 
     public boolean removeIO(BlockPos pos)
     {
-        return consumers.remove(pos) || producers.remove(pos);
+        return consumers.remove(pos) | producers.remove(pos);
     }
 
     public Set<BlockPos> getCables()

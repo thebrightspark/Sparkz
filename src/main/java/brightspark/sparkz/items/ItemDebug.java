@@ -61,6 +61,7 @@ public class ItemDebug extends Item
             EnergyNetwork network = cable.getNetwork();
             if(network != null)
             {
+                network.checkNetwork();
                 Set<BlockPos> cables, consumers, producers;
                 if(player.isSneaking())
                     cables = CommonUtils.getAllConnectedCables(world, pos);

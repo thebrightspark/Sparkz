@@ -58,7 +58,7 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     @Override
     public boolean canBeConnectedTo(IBlockAccess world, BlockPos pos, EnumFacing facing)
     {
-        return CommonUtils.canCableConnect(world, pos.offset(facing));
+        return CommonUtils.canCableConnect(world, pos.offset(facing), facing.getOpposite());
     }
 
     @Nullable
@@ -109,10 +109,11 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
         else
         {
             IEnergy energy = IEnergy.create(world, neighbour, null);
+            EnumFacing side = CommonUtils.getSide(pos, neighbour);
             if(energy != null)
             {
-                if(energy.canInput()) cableTE.getNetwork().addConsumer(neighbour);
-                if(energy.canOutput()) cableTE.getNetwork().addProducer(neighbour);
+                if(energy.canInput(side)) cableTE.getNetwork().addConsumer(neighbour);
+                if(energy.canOutput(side)) cableTE.getNetwork().addProducer(neighbour);
             }
         }
     }

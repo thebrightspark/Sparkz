@@ -23,37 +23,37 @@ public class ForgeEnergyInterface implements IEnergy
     }
 
     @Override
-    public boolean canInput()
+    public boolean canInput(EnumFacing side)
     {
         return energy.canReceive();
     }
 
     @Override
-    public boolean canOutput()
+    public boolean canOutput(EnumFacing side)
     {
         return energy.canExtract();
     }
 
     @Override
-    public long getMaxInput()
+    public long getMaxInput(EnumFacing side)
     {
         return energy.receiveEnergy(Integer.MAX_VALUE, true);
     }
 
     @Override
-    public long getMaxOutput()
+    public long getMaxOutput(EnumFacing side)
     {
         return energy.extractEnergy(Integer.MAX_VALUE, true);
     }
 
     @Override
-    public long inputEnergy(long amount)
+    public long inputEnergy(EnumFacing side, long amount)
     {
         return energy.receiveEnergy((int) amount, false);
     }
 
     @Override
-    public long outputEnergy(long maxAmount)
+    public long outputEnergy(EnumFacing side, long maxAmount)
     {
         return energy.extractEnergy((int) maxAmount, false);
     }

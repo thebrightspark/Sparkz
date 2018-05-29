@@ -9,6 +9,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -29,11 +30,36 @@ public class CommonUtils
     }
 
     /**
+     * Returns the side that pos2 is on relative to pos1
+     */
+    public static EnumFacing getSide(BlockPos pos1, BlockPos pos2)
+    {
+        int vecX = Integer.compare(pos2.getX(), pos1.getX());
+        int vecY = Integer.compare(pos2.getY(), pos1.getY());
+        int vecZ = Integer.compare(pos2.getZ(), pos1.getZ());
+        return EnumFacing.getFacingFromVector(vecX, vecY, vecZ);
+    }
+
+    /**
+     * Returns a side which has a cable in this network
+     */
+    public static EnumFacing getSideWithCable(World world, BlockPos pos, EnergyNetwork network)
+    {
+        for(EnumFacing side : EnumFacing.VALUES)
+        {
+            BlockPos sidePos = pos.offset(side);
+            if(isCable(world, sidePos) && network.hasCablePos(sidePos))
+                return side;
+        }
+        return null;
+    }
+
+    /**
      * Returns whether cable can be connected to the block at the given position
      */
-    public static boolean canCableConnect(IBlockAccess world, BlockPos pos)
+    public static boolean canCableConnect(IBlockAccess world, BlockPos pos, EnumFacing side)
     {
-        return isCable(world, pos) || isIO(world, pos);
+        return isCable(world, pos) || isIO(world, pos, side);
     }
 
     /**
@@ -43,23 +69,26 @@ public class CommonUtils
     {
         int num = 0;
         for(EnumFacing side : EnumFacing.values())
-        {
-            IBlockState state = world.getBlockState(pos.offset(side));
-            if(state.getBlock() instanceof BlockCable)
+            if(isCable(world, pos.offset(side)))
                 num++;
-        }
         return num;
     }
 
+    /**
+     * Returns true if the block at the position is a cable
+     */
     public static boolean isCable(IBlockAccess world, BlockPos pos)
     {
         return world.getBlockState(pos).getBlock() instanceof BlockCable;
     }
 
-    public static boolean isIO(IBlockAccess world, BlockPos pos)
+    /**
+     * Returns true if the block at the position can accept or output energy
+     */
+    public static boolean isIO(IBlockAccess world, BlockPos pos, EnumFacing side)
     {
-        IEnergy energy = IEnergy.create(world, pos, null);
-        return energy != null && (energy.canInput() || energy.canOutput());
+        IEnergy energy = IEnergy.create(world, pos, side);
+        return energy != null && (energy.canInput(side) || energy.canOutput(side));
     }
 
     /**
@@ -86,7 +115,7 @@ public class CommonUtils
         for(EnumFacing facing : EnumFacing.VALUES)
         {
             BlockPos nextPos = pos.offset(facing);
-            if(!CommonUtils.isCable(world, nextPos))
+            if(!isCable(world, nextPos))
                 continue;
             boolean alreadyInNetwork = false;
             for(Set<BlockPos> network : networks)

@@ -5,10 +5,17 @@ import net.minecraftforge.common.config.Config;
 @Config(modid = Sparkz.MOD_ID)
 public class SparkzConfig
 {
+    @Config.Name("Merge Energy")
+    @Config.Comment({
+            "True -> Energy from producers to consumers is converted as required",
+            "False -> Energy is not converted, so producers of a certain energy type can only power consumers of that type"
+    })
+    public static boolean mergeEnergy = true;
+
     @Config.Name("Energy Conversion")
     @Config.Comment("Energy conversion configs")
     @Config.RequiresMcRestart
-    public static final EnergyConversion ENERGY_CONVERSION = new EnergyConversion();
+    public static EnergyConversion ENERGY_CONVERSION = new EnergyConversion();
 
     public static class EnergyConversion
     {
