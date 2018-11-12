@@ -1,19 +1,25 @@
 package brightspark.sparkz.blocks;
 
 import brightspark.sparkz.Sparkz;
+import brightspark.sparkz.energy.EnergyNetwork;
 import brightspark.sparkz.energy.IEnergy;
 import brightspark.sparkz.energy.NetworkData;
 import brightspark.sparkz.util.CommonUtils;
+import brightspark.sparkz.util.Pair;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.block.Block;
-import net.minecraft.block.properties.PropertyBool;
+import net.minecraft.block.properties.IProperty;
+import net.minecraft.block.properties.PropertyEnum;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
@@ -42,23 +48,23 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
             new AxisAlignedBB(0d, 0.4375d, 0.4375d, 0.375d, 0.5625d, 0.5625d), //West
             new AxisAlignedBB(0.625d, 0.4375d, 0.4375d, 1d, 0.5625d, 0.5625d)  //East
     );
-    public static final ImmutableList<PropertyBool> CONNECTED_PROPERTIES = ImmutableList.copyOf(
-            Stream.of(EnumFacing.VALUES)
-                    .map(facing -> PropertyBool.create(facing.getName()))
-                    .collect(Collectors.toList()));
+    public static final ImmutableList<PropertyEnum<ECableIO>> IO_PROPERTIES = ImmutableList.copyOf(
+        Stream.of(EnumFacing.VALUES)
+            .map(facing -> PropertyEnum.create(facing.getName(), ECableIO.class))
+            .collect(Collectors.toList()));
 
     public BlockCable()
     {
         super("cable");
         IBlockState defaultState = blockState.getBaseState();
-        for(PropertyBool prop : CONNECTED_PROPERTIES)
-            defaultState = defaultState.withProperty(prop, false);
+        for(PropertyEnum<ECableIO> prop : IO_PROPERTIES)
+            defaultState = defaultState.withProperty(prop, ECableIO.NONE);
         setDefaultState(defaultState);
     }
 
     private boolean isConnected(IBlockState state, EnumFacing facing)
     {
-        return state.getValue(CONNECTED_PROPERTIES.get(facing.getIndex()));
+        return state.getValue(IO_PROPERTIES.get(facing.getIndex())) != ECableIO.NONE;
     }
 
     private AxisAlignedBB getConnectionBox(EnumFacing facing)
@@ -69,17 +75,51 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     /**
      * Gets all bounding boxes for current connections
      */
-    private Set<AxisAlignedBB> getConnectionBoxes(IBlockState state)
+    private Set<AxisAlignedBB> getBoundingBoxesForState(IBlockState state)
     {
         Set<AxisAlignedBB> boxes = Arrays.stream(EnumFacing.VALUES).filter(facing -> isConnected(state, facing)).map(this::getConnectionBox).collect(Collectors.toSet());
         boxes.add(CENTER_BOX);
         return boxes;
     }
 
-    @Override
-    public boolean canBeConnectedTo(IBlockAccess world, BlockPos pos, EnumFacing facing)
+    private Vec3d getPlayerEyePos(EntityPlayer player)
     {
-        return CommonUtils.canCableConnect(world, pos.offset(facing), facing.getOpposite());
+        return player.getPositionEyes(player instanceof EntityPlayerSP ? Minecraft.getMinecraft().getRenderPartialTicks() : 1F);
+    }
+
+    private Pair<EnumFacing, AxisAlignedBB> rayTraceBoxes(EntityPlayer player, IBlockState actualState, BlockPos pos)
+    {
+        Vec3d start = getPlayerEyePos(player);
+        double dist = start.distanceTo(new Vec3d(pos));
+        Vec3d end = start.add(player.getLookVec().scale(dist + 1.5D));
+        EnumFacing closestFacing = null;
+        AxisAlignedBB closestBox = CENTER_BOX;
+        double closestDist = Double.MAX_VALUE;
+
+        RayTraceResult ray = rayTrace(pos, start, end, CENTER_BOX);
+        if(ray != null)
+            closestDist = ray.hitVec.squareDistanceTo(start);
+
+        for(EnumFacing facing : EnumFacing.VALUES)
+        {
+            if(isConnected(actualState, facing))
+            {
+                AxisAlignedBB box = getConnectionBox(facing);
+                ray = rayTrace(pos, start, end, box);
+                if(ray != null)
+                {
+                    double rayDist = ray.hitVec.squareDistanceTo(start);
+                    if(rayDist < closestDist)
+                    {
+                        closestFacing = facing;
+                        closestBox = box;
+                        closestDist = rayDist;
+                    }
+                }
+            }
+        }
+
+        return new Pair<>(closestFacing, closestBox);
     }
 
     @Nullable
@@ -87,6 +127,40 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     public TileEntity createNewTileEntity(World worldIn, int meta)
     {
         return new TileCable();
+    }
+
+    @Override
+    public boolean onBlockActivated(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ)
+    {
+        ItemStack heldItem = playerIn.getHeldItem(hand);
+        if(heldItem.getItem() != Sparkz.wrench)
+            return false;
+        TileCable te = getTileEntity(worldIn, pos);
+        if(te == null)
+            return false;
+        if(!worldIn.isRemote)
+            return true;
+        EnergyNetwork network = te.getNetwork();
+
+        if(playerIn.isSneaking())
+            //Break block
+            if(removedByPlayer(state, worldIn, pos, playerIn, false))
+                //Remove from network
+                network.removeCable(pos);
+        else
+        {
+            IBlockState actualState = getActualState(state, worldIn, pos);
+            Pair<EnumFacing, AxisAlignedBB> result = rayTraceBoxes(playerIn, actualState, pos);
+            EnumFacing ioSide = result.key;
+            if(ioSide != null)
+            {
+                //Change IO
+                ECableIO io = te.getSideIO(ioSide);
+                te.setSideIO(ioSide, io.next());
+                worldIn.notifyBlockUpdate(pos, actualState, getActualState(state, worldIn, pos), 3);
+            }
+        }
+        return true;
     }
 
     @Override
@@ -117,7 +191,8 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     public void neighborChanged(IBlockState state, World world, BlockPos pos, Block block, BlockPos neighbour)
     {
         //TODO: This is only ever called on the server side. Do I need to send a packet to the client for TileCable#determineSideIO?
-        Sparkz.logger.info("Neighbour change!");
+        Sparkz.logger.info("Neighbour change -> {}", pos);
+        IBlockState actualBefore = getActualState(state, world, pos);
         TileCable cableTE = getTileEntity(world, pos);
         cableTE.determineSideIO(world, neighbour);
 
@@ -137,6 +212,7 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
                 if(energy.canOutput(side)) cableTE.getNetwork().addProducer(neighbour);
             }
         }
+        world.notifyBlockUpdate(pos, actualBefore, getActualState(state, world, pos), 3);
     }
 
     @Override
@@ -158,7 +234,7 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
             state = state.getActualState(world, pos);
 
         //addCollisionBoxToList(pos, entityBox, collidingBoxes, CENTER_BOX);
-        getConnectionBoxes(state).forEach(box -> addCollisionBoxToList(pos, entityBox, collidingBoxes, box));
+        getBoundingBoxesForState(state).forEach(box -> addCollisionBoxToList(pos, entityBox, collidingBoxes, box));
     }
 
     @Nullable
@@ -168,7 +244,7 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
         RayTraceResult closestRay = null;
         double closestDist = Double.MAX_VALUE;
 
-        for(AxisAlignedBB box : getConnectionBoxes(getActualState(blockState, worldIn, pos)))
+        for(AxisAlignedBB box : getBoundingBoxesForState(getActualState(blockState, worldIn, pos)))
         {
             RayTraceResult ray = rayTrace(pos, start, end, box);
             if(ray != null)
@@ -194,7 +270,7 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
         double maxX = CENTER_BOX.maxX;
         double maxY = CENTER_BOX.maxY;
         double maxZ = CENTER_BOX.maxZ;
-        for(AxisAlignedBB box : getConnectionBoxes(actualState))
+        for(AxisAlignedBB box : getBoundingBoxesForState(actualState))
         {
             minX = Math.min(minX, box.minX);
             minY = Math.min(minY, box.minY);
@@ -222,7 +298,7 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
         AxisAlignedBB closestBox = null;
         double closestDist = Double.MAX_VALUE;
 
-        for(AxisAlignedBB box : getConnectionBoxes(getActualState(state, worldIn, pos)))
+        for(AxisAlignedBB box : getBoundingBoxesForState(getActualState(state, worldIn, pos)))
         {
             RayTraceResult ray = rayTrace(pos, startPos, endPos, box);
             if(ray != null)
@@ -248,14 +324,17 @@ public class BlockCable extends AbstractBlockContainer<TileCable>
     @Override
     public IBlockState getActualState(IBlockState state, IBlockAccess world, BlockPos pos)
     {
+        TileCable te = getTileEntity(world, pos);
+        if(te == null)
+            return state;
         for(EnumFacing facing : EnumFacing.VALUES)
-            state = state.withProperty(CONNECTED_PROPERTIES.get(facing.getIndex()), canBeConnectedTo(world, pos, facing));
+            state = state.withProperty(IO_PROPERTIES.get(facing.getIndex()), te.getSideIO(facing));
         return state;
     }
 
     @Override
     protected BlockStateContainer createBlockState()
     {
-        return new BlockStateContainer(this, CONNECTED_PROPERTIES.toArray(new PropertyBool[0]));
+        return new BlockStateContainer(this, IO_PROPERTIES.toArray(new IProperty[0]));
     }
 }

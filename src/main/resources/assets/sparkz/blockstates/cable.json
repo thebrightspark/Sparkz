@@ -9,11 +9,41 @@
     },
     "variants": {
         "inventory":{ "model": "sparkz:cable_center" },
-        "north":    { "true": { "submodel": "sparkz:cable_side" }, "false": {}},
-        "south":    { "true": { "submodel": "sparkz:cable_side", "y": 180 }, "false": {}},
-        "east":     { "true": { "submodel": "sparkz:cable_side", "y": 90 }, "false": {}},
-        "west":     { "true": { "submodel": "sparkz:cable_side", "y": 270 }, "false": {}},
-        "up":       { "true": { "submodel": "sparkz:cable_side", "x": 270 }, "false": {}},
-        "down":     { "true": { "submodel": "sparkz:cable_side", "x": 90 }, "false": {}}
+        "north": {
+            "none":    {},
+            "neutral": { "submodel": "sparkz:cable_side_neutral" },
+            "input":   { "submodel": "sparkz:cable_side_input"   },
+            "output":  { "submodel": "sparkz:cable_side_output"  }
+        },
+        "south": {
+            "none":    {},
+            "neutral": { "submodel": "sparkz:cable_side_neutral", "y": 180 },
+            "input":   { "submodel": "sparkz:cable_side_input",   "y": 180 },
+            "output":  { "submodel": "sparkz:cable_side_output",  "y": 180 }
+        },
+        "east": {
+            "none":    {},
+            "neutral": { "submodel": "sparkz:cable_side_neutral", "y": 90 },
+            "input":   { "submodel": "sparkz:cable_side_input",   "y": 90 },
+            "output":  { "submodel": "sparkz:cable_side_output",  "y": 90 }
+        },
+        "west": {
+            "none":    {},
+            "neutral": { "submodel": "sparkz:cable_side_neutral", "y": 270 },
+            "input":   { "submodel": "sparkz:cable_side_input",   "y": 270 },
+            "output":  { "submodel": "sparkz:cable_side_output",  "y": 270 }
+        },
+        "up": {
+            "none":    {},
+            "neutral": { "submodel": "sparkz:cable_side_neutral", "x": 270 },
+            "input":   { "submodel": "sparkz:cable_side_input",   "x": 270 },
+            "output":  { "submodel": "sparkz:cable_side_output",  "x": 270 }
+        },
+        "down": {
+            "none":    {},
+            "neutral": { "submodel": "sparkz:cable_side_neutral", "x": 90 },
+            "input":   { "submodel": "sparkz:cable_side_input",   "x": 90 },
+            "output":  { "submodel": "sparkz:cable_side_output",  "x": 90 }
+        }
     }
 }

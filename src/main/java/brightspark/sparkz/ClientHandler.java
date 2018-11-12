@@ -1,6 +1,5 @@
 package brightspark.sparkz;
 
-import brightspark.sparkz.init.SItems;
 import brightspark.sparkz.util.ClientUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -54,20 +53,20 @@ public class ClientHandler
     @SubscribeEvent
     public static void highlightNetwork(RenderWorldLastEvent event)
     {
-        ItemStack heldItem = ClientUtils.getHeldItem(SItems.debug);
+        ItemStack heldItem = ClientUtils.getHeldItem(Sparkz.debug);
         if(heldItem == null) return;
 
-        Set<BlockPos> cables = SItems.debug.cablesToHighlight;
+        Set<BlockPos> cables = Sparkz.debug.cablesToHighlight;
         if(cables != null)
             for(BlockPos pos : cables)
                 renderBox(pos, event.getPartialTicks(), cableColour);
 
-        Set<BlockPos> inputs = SItems.debug.consumersToHighlight;
+        Set<BlockPos> inputs = Sparkz.debug.consumersToHighlight;
         if(inputs != null)
             for(BlockPos pos : inputs)
                 renderBox(pos, event.getPartialTicks(), consumerColour);
 
-        Set<BlockPos> outputs = SItems.debug.producersToHighlight;
+        Set<BlockPos> outputs = Sparkz.debug.producersToHighlight;
         if(outputs != null)
             for(BlockPos pos : outputs)
                 renderBox(pos, event.getPartialTicks(), producerColour);

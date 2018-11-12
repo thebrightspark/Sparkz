@@ -1,6 +1,6 @@
 package brightspark.sparkz.messages;
 
-import brightspark.sparkz.init.SItems;
+import brightspark.sparkz.Sparkz;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.IThreadListener;
@@ -61,9 +61,9 @@ public class MessageGetComponents implements IMessage
             final IThreadListener mainThread = Minecraft.getMinecraft();
             mainThread.addScheduledTask(() ->
             {
-                SItems.debug.cablesToHighlight = message.cables;
-                SItems.debug.consumersToHighlight = message.consumers;
-                SItems.debug.producersToHighlight = message.producers;
+                Sparkz.debug.cablesToHighlight = message.cables;
+                Sparkz.debug.consumersToHighlight = message.consumers;
+                Sparkz.debug.producersToHighlight = message.producers;
             });
             return null;
         }

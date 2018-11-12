@@ -55,14 +55,6 @@ public class CommonUtils
     }
 
     /**
-     * Returns whether cable can be connected to the block at the given position
-     */
-    public static boolean canCableConnect(IBlockAccess world, BlockPos pos, EnumFacing side)
-    {
-        return isCable(world, pos) || isIO(world, pos, side);
-    }
-
-    /**
      * Returns the amount of adjacent cables to this position
      */
     public static int countAdjacentCables(IBlockAccess world, BlockPos pos)
